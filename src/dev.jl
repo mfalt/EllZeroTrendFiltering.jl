@@ -63,6 +63,7 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
     λ_prev = Λ
     λ_curr = Λ.next
 
+    Δ = QuadraticPolynomial(0., 0., 0.)
     while ~isnull(λ_curr)
 
         left_endpoint = get(λ_curr).left_endpoint
@@ -70,17 +71,17 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
         # TODO: This is probably not needed now..
         if left_endpoint == -1e9
             #println("minus-inf")
-            left_endpoint = -10000
+            left_endpoint = -10000.0
         end
 
         right_endpoint = get_right_endpoint(get(λ_curr))
 
         if right_endpoint == 1e9
             #println("inf")
-            right_endpoint = left_endpoint + 20000
+            right_endpoint = left_endpoint + 20000.0
         end
 
-        Δ = ρ - get(λ_curr).p
+        Δ .= ρ .- get(λ_curr).p
 
         root1,root2 = roots(Δ)
 
@@ -108,7 +109,6 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
         end
 
         #println("case 3:")
-
         λ_prev, λ_curr = impose_quadratic_to_endpoint(λ_prev, get(λ_curr), (get(λ_curr).left_endpoint + right_endpoint)/2, ρ, Δ)
         #println(Λ)
 
@@ -123,13 +123,12 @@ end
 
 # TODO Possibly just insert all roots, and then do the comparisons?
 # Leads to some unnecessary nodes being created but is perhaps simplier?
-
-function impose_quadratic_to_root(λ_prev, λ_curr, root, midpoint, ρ, Δ)
+function impose_quadratic_to_root{T}(λ_prev::PiecewiseQuadratic{T}, λ_curr::PiecewiseQuadratic{T}, root::T, midpoint::T, ρ::QuadraticPolynomial{T}, Δ::QuadraticPolynomial{T})
     if Δ((λ_curr.left_endpoint + root)/2) < 0 # ρ is smallest, i.e., should be inserted
         if λ_prev.p === ρ
             #println("1")
             λ_curr.left_endpoint = root
-            return λ_prev, Nullable{PiecewiseQuadratic}(λ_curr)
+            return λ_prev, Nullable{PiecewiseQuadratic{Float64}}(λ_curr)
         else
             #println("2")
 
@@ -148,27 +147,25 @@ function impose_quadratic_to_root(λ_prev, λ_curr, root, midpoint, ρ, Δ)
     end
 end
 
-function impose_quadratic_to_endpoint(λ_prev, λ_curr, midpoint, ρ, Δ)
-    if Δ(midpoint) < 0 # ρ is smallest, i.e., should be inserted
+@inline function impose_quadratic_to_endpoint{T}(λ_prev::PiecewiseQuadratic{T}, λ_curr::PiecewiseQuadratic{T}, midpoint, ρ, Δ)
+    local v1, v2
+    if Δ(midpoint) < 0  # ρ is smallest, i.e., should be inserted
         if λ_prev.p === ρ
             #println("1")
             λ_new = delete_next(λ_prev)
-            return λ_prev, λ_new
+            v1, v2 = λ_prev, λ_new
         else
             #println("2")
             λ_curr.p = ρ
-            return λ_curr, λ_curr.next
+            v1, v2 = λ_curr, λ_curr.next
         end
     else
         # Do nothing
         #println("3")
-        return λ_curr, λ_curr.next
+        v1, v2 = λ_curr, λ_curr.next
     end
+    return v1, v2 #Single point of exit
 end
-
-
-
-
 
 function minimize_wrt_x2(qf::QuadraticForm2)
     P = qf.P
@@ -183,7 +180,24 @@ function minimize_wrt_x2(qf::QuadraticForm2)
         QuadraticPolynomial(P[1,1], q[1], r)
     else
         # There are some special cases, but disregards these
-        QuadraticPolynomial(0,0,-Inf)
+        QuadraticPolynomial(0.,0.,-Inf)
+    end
+end
+
+function minimize_wrt_x2_fast{T}(qf::QuadraticForm2{T},a,b,c)
+    P = qf.P
+    q = qf.q
+    r = qf.r
+
+    if P[2,2] > 0
+        QuadraticPolynomial(P[1,1] - P[1,2]^2 / (P[2,2]+a),
+        q[1] - P[1,2]*(q[2]+b) / (P[2,2]+a),
+        (r+c) - (q[2]+b)^2 / (P[2,2]+a)/ 4)
+    elseif (P[2,2]+a) == 0 || P[1,2] == 0 || (q[2]+b) == 0
+        QuadraticPolynomial(P[1,1], q[1], r+c)
+    else
+        # There are some special cases, but disregards these
+        QuadraticPolynomial(0.,0.,-Inf)
     end
 end
 
@@ -191,11 +205,11 @@ end
 """
 Find optimal fit
 """
-function find_optimal_fit(Λ_0, ℓ, M)
+function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{QuadraticForm2{T},2}, M)
 
     N = size(ℓ, 2)
 
-    Λ = Array{PiecewiseQuadratic}(M, N-1)
+    Λ = Array{PiecewiseQuadratic{T}}(M, N-1)
 
     Λ[1, :] .= Λ_0
 
@@ -207,8 +221,10 @@ function find_optimal_fit(Λ_0, ℓ, M)
                 for λ in Λ[m-1, ip]
                     p = λ.p
 
-                    ρ = dev.minimize_wrt_x2(
-                    ℓ[i,ip] + dev.QuadraticForm2(@SMatrix([0 0; 0 1])*p.a, @SVector([0, 1])*p.b, p.c))
+                    # ρ = dev.minimize_wrt_x2(
+                    # ℓ[i,ip] + dev.QuadraticForm2{T}(@SMatrix([0. 0; 0 1])*p.a, @SVector([0., 1])*p.b, p.c))
+                    # # Avoid ceting two extra QuadraticForm2
+                    ρ = dev.minimize_wrt_x2_fast(ℓ[i,ip], p.a, p.b, p.c)
                     ρ.time_index = ip
                     ρ.ancestor = p
 
@@ -257,7 +273,7 @@ function find_minimum(Λ::PiecewiseQuadratic)
 end
 
 
-function recover_solution(Λ::PiecewiseQuadratic, first_index=1, last_index=-1)
+function recover_solution{T}(Λ::PiecewiseQuadratic{T}, first_index=1, last_index=-1)
 
     p, y, f = find_minimum(Λ)
 
@@ -288,7 +304,7 @@ Computes the transition costs ℓ given a
 polynomial and a sequence t
 """
 function compute_transition_costs(g, t::AbstractArray)
-
+    T = Float64
     # Find primitive functions to g, t*g, and g^2
     # and evaluate them at the break points
     #I_g = polyint(g).(t)
@@ -309,7 +325,7 @@ function compute_transition_costs(g, t::AbstractArray)
     end
 
 
-    ℓ = Array{QuadraticForm2}(N-1,N)
+    ℓ = Array{QuadraticForm2{T}}(N-1,N)
 
     for i=1:N-1
         for ip=i+1:N
