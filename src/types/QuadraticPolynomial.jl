@@ -43,11 +43,8 @@ end
 
 ==(p1::QuadraticPolynomial, p2::QuadraticPolynomial) = (p1.a==p2.a) && (p1.b==p2.b) && (p1.c==p2.c)
 
-
-polyval(p::QuadraticPolynomial, x) = p.a*x^2 + p.b*x + p.c
-
-function (p::QuadraticPolynomial)(x)
-    return polyval(p, x)
+@inline function (p::QuadraticPolynomial)(x)
+    return p.a*x^2 + p.b*x + p.c
 end
 
 

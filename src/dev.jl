@@ -66,7 +66,7 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
     Δ = QuadraticPolynomial(0., 0., 0.)
     while ~isnull(λ_curr)
 
-        left_endpoint = get(λ_curr).left_endpoint
+        left_endpoint = unsafe_get(λ_curr).left_endpoint
 
         # TODO: This is probably not needed now..
         if left_endpoint == -1e9
@@ -74,14 +74,14 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
             left_endpoint = -10000.0
         end
 
-        right_endpoint = get_right_endpoint(get(λ_curr))
+        right_endpoint = get_right_endpoint(unsafe_get(λ_curr))
 
         if right_endpoint == 1e9
             #println("inf")
             right_endpoint = left_endpoint + 20000.0
         end
 
-        Δ .= ρ .- get(λ_curr).p
+        Δ .= ρ .- unsafe_get(λ_curr).p
 
         root1,root2 = roots(Δ)
 
@@ -89,7 +89,7 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
 
         if root1 > left_endpoint && root1 < right_endpoint
             #println("case 1:")
-            λ_prev, λ_curr = impose_quadratic_to_root(λ_prev, get(λ_curr), root1, (left_endpoint+root1)/2, ρ, Δ)
+            λ_prev, λ_curr = impose_quadratic_to_root(λ_prev, unsafe_get(λ_curr), root1, (left_endpoint+root1)/2, ρ, Δ)
             #println(Λ)
         end
 
@@ -99,7 +99,7 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
 
         if root2 > left_endpoint && root2 < right_endpoint
             #println("case 2:")
-            λ_prev, λ_curr = impose_quadratic_to_root(λ_prev, get(λ_curr), root2, (root1 + root2)/2, ρ, Δ)
+            λ_prev, λ_curr = impose_quadratic_to_root(λ_prev, unsafe_get(λ_curr), root2, (root1 + root2)/2, ρ, Δ)
             #println(Λ)
             if Δ.a > 0; return; end # Saves perhaps 5% of computation time
         end
@@ -109,7 +109,7 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
         end
 
         #println("case 3:")
-        λ_prev, λ_curr = impose_quadratic_to_endpoint(λ_prev, get(λ_curr), (get(λ_curr).left_endpoint + right_endpoint)/2, ρ, Δ)
+        λ_prev, λ_curr = impose_quadratic_to_endpoint(λ_prev, unsafe_get(λ_curr), (unsafe_get(λ_curr).left_endpoint + right_endpoint)/2, ρ, Δ)
         #println(Λ)
 
         if isnull(λ_curr)
@@ -152,7 +152,7 @@ end
     if Δ(midpoint) < 0  # ρ is smallest, i.e., should be inserted
         if λ_prev.p === ρ
             #println("1")
-            λ_new = delete_next(λ_prev)
+            λ_new = delete_next_unsafe(λ_prev)
             v1, v2 = λ_prev, λ_new
         else
             #println("2")
@@ -201,12 +201,10 @@ function minimize_wrt_x2_fast{T}(qf::QuadraticForm2{T},a,b,c)
     end
 end
 
-
 """
 Find optimal fit
 """
 function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{QuadraticForm2{T},2}, M)
-
     N = size(ℓ, 2)
 
     Λ = Array{PiecewiseQuadratic{T}}(M, N-1)
@@ -227,7 +225,6 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
                     ρ = dev.minimize_wrt_x2_fast(ℓ[i,ip], p.a, p.b, p.c)
                     ρ.time_index = ip
                     ρ.ancestor = p
-
 
                     dev.add_quadratic(Λ_new, ρ)
                 end
@@ -286,7 +283,7 @@ function recover_solution{T}(Λ::PiecewiseQuadratic{T}, first_index=1, last_inde
             break;
         end
 
-        p = get(p.ancestor)
+        p = unsafe_get(p.ancestor)
     end
 
     if last_index != -1

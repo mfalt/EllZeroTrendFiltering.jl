@@ -23,7 +23,7 @@ end
 
 start{T}(pwq::PiecewiseQuadratic{T}) = pwq.next
 done{T}(pwq::PiecewiseQuadratic{T}, iterstate::Nullable{PiecewiseQuadratic{T}}) = isnull(iterstate)
-next{T}(pwq::PiecewiseQuadratic{T}, iterstate::Nullable{PiecewiseQuadratic{T}}) = (get(iterstate), get(iterstate).next)
+next{T}(pwq::PiecewiseQuadratic{T}, iterstate::Nullable{PiecewiseQuadratic{T}}) = (unsafe_get(iterstate), unsafe_get(iterstate).next)
 
 function insert{T}(pwq::PiecewiseQuadratic{T}, p::QuadraticPolynomial, left_endpoint)
     pwq.next = PiecewiseQuadratic(p, left_endpoint, pwq.next)
@@ -32,8 +32,9 @@ end
 
 # Delete the node after pwq and return the node that will follow after
 # pwq after the deletion
+#OBS This function is unsafe if pwq.next does not exist
 function delete_next{T}(pwq::PiecewiseQuadratic{T})
-    pwq.next = get(pwq.next).next
+    pwq.next = unsafe_get(pwq.next).next
     return pwq.next
 end
 
@@ -41,7 +42,7 @@ function get_right_endpoint(λ::PiecewiseQuadratic)
     if isnull(λ.next)
         return 1e9
     else
-        return get(λ.next).left_endpoint
+        return unsafe_get(λ.next).left_endpoint
     end
 end
 
