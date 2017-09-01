@@ -152,7 +152,7 @@ end
     if Δ(midpoint) < 0  # ρ is smallest, i.e., should be inserted
         if λ_prev.p === ρ
             #println("1")
-            λ_new = delete_next_unsafe(λ_prev)
+            λ_new = delete_next(λ_prev)
             v1, v2 = λ_prev, λ_new
         else
             #println("2")
