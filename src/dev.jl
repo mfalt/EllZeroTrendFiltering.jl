@@ -184,17 +184,22 @@ function minimize_wrt_x2(qf::QuadraticForm2)
     end
 end
 
-function minimize_wrt_x2_fast{T}(qf::QuadraticForm2{T},a,b,c)
+# Takes a quadratic form in [x1; x2] and a polynomial in x2
+# and returns the minimum of the sum wrt to x2,
+# i.e. a polynomial of x1
+function minimize_wrt_x2_fast{T}(qf::QuadraticForm2{T},p::QuadraticPolynomial{T})
+
+    # Create quadratic form representing the sum of qf and p
     P = qf.P
     q = qf.q
     r = qf.r
 
-    if P[2,2] > 0
-        QuadraticPolynomial(P[1,1] - P[1,2]^2 / (P[2,2]+a),
-        q[1] - P[1,2]*(q[2]+b) / (P[2,2]+a),
-        (r+c) - (q[2]+b)^2 / (P[2,2]+a)/ 4)
-    elseif (P[2,2]+a) == 0 || P[1,2] == 0 || (q[2]+b) == 0
-        QuadraticPolynomial(P[1,1], q[1], r+c)
+    if P[2,2] + p.a > 0
+        QuadraticPolynomial(P[1,1] - P[1,2]^2 / (P[2,2]+p.a),
+        q[1] - P[1,2]*(q[2]+p.b) / (P[2,2]+p.a),
+        (r+p.c) - (q[2]+p.b)^2 / (P[2,2]+p.a)/ 4)
+    elseif (P[2,2]+p.a) == 0 || P[1,2] == 0 || (q[2]+p.b) == 0 #why are the two last conditions needed?
+        QuadraticPolynomial(P[1,1], q[1], r+p.c)
     else
         # There are some special cases, but disregards these
         QuadraticPolynomial(0.,0.,-Inf)
@@ -222,7 +227,7 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
                     # ρ = dev.minimize_wrt_x2(
                     # ℓ[i,ip] + dev.QuadraticForm2{T}(@SMatrix([0. 0; 0 1])*p.a, @SVector([0., 1])*p.b, p.c))
                     # # Avoid ceting two extra QuadraticForm2
-                    ρ = dev.minimize_wrt_x2_fast(ℓ[i,ip], p.a, p.b, p.c)
+                    ρ = dev.minimize_wrt_x2_fast(ℓ[i,ip], p)
                     ρ.time_index = ip
                     ρ.ancestor = p
 
