@@ -61,21 +61,22 @@ function show(io::IO, Λ::PiecewiseQuadratic)
 
     for λ in Λ
         if λ.left_endpoint == -1e9
-            @printf("[  -∞ ,")
+            print(io, "[  -∞ ,")
         else
-            @printf("[%3.2f,", λ.left_endpoint)
+            @printf(io, "[%3.2f,", λ.left_endpoint)
         end
 
         if get_right_endpoint(λ) == 1e9
-            @printf(" ∞  ]")
+            print(io, " ∞  ]")
         else
-            @printf(" %3.2f]", get_right_endpoint(λ))
+            @printf(io, " %3.2f]", get_right_endpoint(λ))
         end
 
-        @printf("\t  :   ")
-        show(λ.p)
-        @printf("\n")
+        print(io, "\t  :   ")
+        show(io, λ.p)
+        print(io, "\n")
     end
+    return
 end
 
 
@@ -88,29 +89,49 @@ function evalPwq(Λ::PiecewiseQuadratic, x)
     return y
 end
 
-
-function plot_pwq(Λ::PiecewiseQuadratic, plot_style="-")
-    figure()
-
+function get_vals(Λ::PiecewiseQuadratic)
+    x = Float64[]
+    y = Float64[]
+    x_all = Array{Float64,1}[]
+    y_all = Array{Float64,1}[]
     for λ in Λ
         left_endpoint = λ.left_endpoint
         right_endpoint = get_right_endpoint(λ)
 
-        if left_endpoint == -1e9
-            left_endpoint = right_endpoint - 2.0
-        end
+        if left_endpoint != -1e9 || right_endpoint != 1e9
+            if left_endpoint == -1e9
+                left_endpoint = right_endpoint - 2.0
+            end
 
-        if right_endpoint == 1e9
-            right_endpoint = left_endpoint + 2.0
+            if right_endpoint == 1e9
+                right_endpoint = left_endpoint + 2.0
+            end
+        else
+            left_endpoint = -10.
+            right_endpoint = 10.
         end
 
         y_grid_gray = linspace(left_endpoint-1, right_endpoint+1)
-        plot(y_grid_gray, polyval.(λ.p, y_grid_gray), "gray")
+        push!(x_all, y_grid_gray)
+        push!(y_all, λ.p.(y_grid_gray))
 
         y_grid = linspace(left_endpoint, right_endpoint)
-        plot(y_grid, polyval.(λ.p, y_grid), "red")
-
+        append!(x, y_grid)
+        append!(y, λ.p.(y_grid))
     end
+    return x, y, x_all, y_all
+end
+
+
+function plot_pwq(Λ::PiecewiseQuadratic)
+    x, y, x_all, y_all = get_vals(Λ)
+    p = plot(x,y, l =(3,:red), lab="minimum", size=(1200,800))
+    for i in eachindex(x_all)
+        plot!(p, x_all[i][[1,end]], y_all[i][[1,end]], l = 0, m=(1,:cross,:orange))
+        plot!(p, x_all[i], y_all[i], l=(1,:blue), lab="")
+    end
+    p
+    return p
 end
 
 """
