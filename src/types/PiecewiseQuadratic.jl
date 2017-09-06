@@ -25,6 +25,20 @@ start{T}(pwq::PiecewiseQuadratic{T}) = pwq.next
 done{T}(pwq::PiecewiseQuadratic{T}, iterstate::Nullable{PiecewiseQuadratic{T}}) = isnull(iterstate)
 next{T}(pwq::PiecewiseQuadratic{T}, iterstate::Nullable{PiecewiseQuadratic{T}}) = (unsafe_get(iterstate), unsafe_get(iterstate).next)
 
+# For trouble-shooting etc.
+function getindex(Λ::dev.PiecewiseQuadratic, n::Int64)
+    if n <= 0
+        error("Attempted to access index <= 0 in piecewise quadratic.")
+    end
+
+    λ = get(Λ.next)
+    for k=1:n-1
+        λ = get(λ.next)
+    end
+    return λ
+end
+
+
 function insert{T}(pwq::PiecewiseQuadratic{T}, p::QuadraticPolynomial, left_endpoint)
     pwq.next = PiecewiseQuadratic(p, left_endpoint, pwq.next)
     return pwq.next
