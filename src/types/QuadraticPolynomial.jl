@@ -25,7 +25,7 @@ function QuadraticPolynomial(x::Vector)
 end
 
 function Base.show(io::IO, p::QuadraticPolynomial)
-    print(@sprintf("%.2f*x^2 + %.2f*x + %.2f   ", p.a, p.b, p.c))
+    @printf(io, "%.2f*x^2 + %.2f*x + %.2f   ", p.a, p.b, p.c)
 end
 
 

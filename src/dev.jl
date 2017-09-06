@@ -15,7 +15,6 @@ import Base.==
 import IterTools
 
 using StaticArrays
-using PyPlot
 using Polynomials
 using QuadGK
 
@@ -212,14 +211,14 @@ Find optimal fit
 function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{QuadraticForm2{T},2}, M)
     N = size(ℓ, 2)
 
-    Λ = Array{PiecewiseQuadratic{T}}(M, N-1)
+    Λ = Array{PiecewiseQuadratic{T}}(M, N)
 
-    Λ[1, :] .= Λ_0
+    Λ[1, 1:end-1] .= Λ_0
 
     for m=2:M
-        for i=N-m+1:-1:1
+        for i=N-m:-1:1
             Λ_new = create_new_pwq()
-            for ip=i+1:N-m
+            for ip=i+1:N-m+1
 
                 for λ in Λ[m-1, ip]
                     p = λ.p
