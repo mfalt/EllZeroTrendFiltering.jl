@@ -1,39 +1,53 @@
 using Base.Test
 using PyPlot
 using Interpolations
-include("../src/dev.jl")
-
-t = linspace(0,π,50)
-y = sin.(t)
+include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 
 
-ℓ = dev.compute_discrete_transition_costs(y)
+## Test 1
+# Compare the approximation costs computed using ℓ which is obtained from
+# compute_discrete_transition_costs and computed via simple linear interpolation
 
-
-I = [1,10,30,40,50]
-Y = sin.(t[I])
-
-cost = 0.0;
-for k=1:length(I)-1
- i = I[k]
- ip = I[k+1]
- println(i, ":", ip)
- cost += ℓ[i, ip](Y[k], Y[k+1])
+function compute_cost(ℓ, I, Y)
+    cost = 0.0;
+    for k=1:length(I)-1
+     cost += ℓ[I[k], I[k+1]](Y[k], Y[k+1])
+    end
+    return cost
 end
 
-y2 = interpolate((t[I],), y[I], Gridded(Linear()))[t]
-
-plot(t, sin.(t))
-plot!(t[I], Y)
-plot!(t, y2, "r--")
-println(cost)
-
-println("Error ℓ: ", cost, "    Error interp: ", sum((y-y2).^2))
 
 
+t = linspace(0,π,50)
+g = sin.(t)
 
-##
 
+ℓ = dev.compute_discrete_transition_costs(g)
+
+## Test 1a
+I1 = [1,10,30,40,50]
+Y1 = g[I1]
+
+y1 = interpolate((I1,), Y1, Gridded(Linear()))[1:length(g)]
+
+@test compute_cost(ℓ,I1,Y1) ≈ sum((y1[1:end-1]-g[1:end-1]).^2)
+
+
+## Test 1b
+I2 = [1,15,30,36,50]
+Y2 = randn(5)
+
+y2 = interpolate((t[I2],), Y2, Gridded(Linear()))[t]
+
+@test compute_cost(ℓ,I2,Y2) ≈ sum((y2[1:end-1]-g[1:end-1]).^2)
+
+#plot(t, sin.(t))
+#plot!(t[I1], Y1)
+#plot!(t, y1, color="red")
+
+
+## Test 2
+# Check the transition costs for a simple example
 ℓ = dev.compute_discrete_transition_costs([1.0, 2.0, 3.0])
 
 # (y - 1)^2
