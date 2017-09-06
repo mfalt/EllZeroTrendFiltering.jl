@@ -12,7 +12,7 @@ function QuadraticPolynomial{T}(a::T, b::T, c::T) where {T}
     # @assert a ≥ 0, # Δ may have negative a ...
     new(a, b, c, Nullable{QuadraticPolynomial{T}}(),-1)
 end
-function QuadraticPolynomial{T}(a::T, b::T, c::T,ancestor, time_index) where {T}
+function QuadraticPolynomial{T}(a::T, b::T, c::T, ancestor, time_index) where {T}
     @assert a ≥ 0
     new(a, b, c, ancestor, time_index)
 end
@@ -56,8 +56,18 @@ function find_minimum(p::QuadraticPolynomial)
         println("No unique minimum exists")
         return (NaN, NaN)
     else
-        return (-p.b / 2 / p.a, -p.b^2/4 + p.c)
+        x_opt = -p.b / 2 / p.a
+        f_opt = -p.b^2/4/p.a + p.c
+        return (x_opt, f_opt)
     end
+end
+
+"""
+Minimum of a quadratic function which is assumed to be positive definite
+No checks of this is done
+"""
+@inline function unsafe_minimum{T}(p::QuadraticPolynomial{T})
+    return (-p.b^2/4/p.a + p.c)::T
 end
 
 

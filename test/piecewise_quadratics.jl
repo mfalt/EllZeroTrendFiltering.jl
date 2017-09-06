@@ -1,14 +1,33 @@
 using Base.Test
-include("../src/dev.jl")
 
+include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 
 pwq = dev.generate_PiecewiseQuadratic([([2.0, 2, 1], -Inf), ([2.0, -2, 1], 0.0)])
 
 @test length(pwq) == 2
-dev.add_quadratic(pwq, dev.QuadraticPolynomial([1, 0, 1.0]))
+dev.add_quadratic2(pwq, dev.QuadraticPolynomial([1, 0, 1.0]))
 
 @test length(pwq) == 3
 
+#---
+# Tests with (2x^2 + 1) and (x^2 + 2) which have intersections in -1, +1
+
+p1 = dev.QuadraticPolynomial([2.0, 0, 1])
+p2 = dev.QuadraticPolynomial([1.0, 0, 2])
+
+pwq1 = dev.create_new_pwq(p1)
+dev.add_quadratic2(pwq1, p2)
+
+println(pwq1)
+
+
+
+pwq2 = dev.create_new_pwq(p2)
+dev.add_quadratic(pwq2, p1)
+
+println(pwq1)
+
+#---
 
 # Given a matrix with coefficients for quadratic polynomials this function
 # constructs the quadratic polynomials and inserts them into a piecewise
@@ -20,7 +39,7 @@ function verify_piecewise_quadratic(c_mat)
     # Insert quadratics into piecewise quadfatic
     pwq = dev.create_new_pwq()
     for p in poly_list
-        dev.add_quadratic(pwq, p)
+        dev.add_quadratic2(pwq, p)
     end
 
     # Check that the intersections between the quadratics are in increasing order
