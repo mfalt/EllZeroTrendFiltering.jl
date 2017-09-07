@@ -7,7 +7,9 @@
 mutable struct PiecewiseQuadratic{T}
 p::QuadraticPolynomial{T}
 left_endpoint::Float64
-next::Nullable{PiecewiseQuadratic{T}}
+next::PiecewiseQuadratic{T}
+PiecewiseQuadratic{T}()  where T = (x=new(); x.left_endpoint=Inf; x.next = x)
+PiecewiseQuadratic{T}(p, left_endpoint, next) where T = new(p, left_endpoint, next)
 end
 
 """
@@ -15,15 +17,45 @@ Constructs piece of quadratic polynomial poiting to NULL, i.e.
 a rightmost piece, or one that has not been inserted into a piecewise quadfatic
 """
 function PiecewiseQuadratic{T}(p::QuadraticPolynomial{T}, left_endpoint)
-    PiecewiseQuadratic(p, left_endpoint, Nullable{PiecewiseQuadratic{T}}())
+    PiecewiseQuadratic{T}(p, left_endpoint, PiecewiseQuadratic{T}())
 end
 function PiecewiseQuadratic{T}(p::QuadraticPolynomial{T}, left_endpoint, next::PiecewiseQuadratic{T})
     PiecewiseQuadratic{T}(p, left_endpoint, next)
 end
 
+
+"""
+Creates empty piecewise-quadratic polynomial consisting only of the list head
+"""
+function create_new_pwq()
+    return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, PiecewiseQuadratic{Float64}())
+end
+
+"""
+Creates piecewise-quadratic polynomial containing one element
+"""
+function create_new_pwq(p::QuadraticPolynomial)
+    pwq = PiecewiseQuadratic(p, -1e9, PiecewiseQuadratic{Float64}())
+    return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, pwq)
+end
+
+function generate_PiecewiseQuadratic(args)
+    return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, _generate_PiecewiseQuadratic_helper(args))
+end
+
+function _generate_PiecewiseQuadratic_helper(args)
+    if Base.length(args) > 1
+        return PiecewiseQuadratic(QuadraticPolynomial(args[1][1]), args[1][2],  _generate_PiecewiseQuadratic_helper(args[2:end]))
+    else
+        return PiecewiseQuadratic(QuadraticPolynomial(args[1][1]), args[1][2])
+    end
+end
+
+
 start{T}(pwq::PiecewiseQuadratic{T}) = pwq.next
-done{T}(pwq::PiecewiseQuadratic{T}, iterstate::Nullable{PiecewiseQuadratic{T}}) = isnull(iterstate)
-next{T}(pwq::PiecewiseQuadratic{T}, iterstate::Nullable{PiecewiseQuadratic{T}}) = (unsafe_get(iterstate), unsafe_get(iterstate).next)
+done{T}(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) = (iterstate.left_endpoint == Inf)
+next{T}(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) = (iterstate, iterstate.next)
+
 
 # For trouble-shooting etc.
 function getindex(Λ::dev.PiecewiseQuadratic, n::Int64)
@@ -148,32 +180,7 @@ function plot_pwq(Λ::PiecewiseQuadratic)
     return p
 end
 
-"""
-Creates empty piecewise-quadratic polynomial consisting only of the list head
-"""
-function create_new_pwq()
-    return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, Nullable{PiecewiseQuadratic{Float64}}())
-end
 
-"""
-Creates piecewise-quadratic polynomial containing one element
-"""
-function create_new_pwq(p::QuadraticPolynomial)
-    pwq = PiecewiseQuadratic(p, -1e9, Nullable{PiecewiseQuadratic{Float64}}())
-    return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, pwq)
-end
-
-function generate_PiecewiseQuadratic(args)
-    return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, _generate_PiecewiseQuadratic_helper(args))
-end
-
-function _generate_PiecewiseQuadratic_helper(args)
-    if Base.length(args) > 1
-        return PiecewiseQuadratic(QuadraticPolynomial(args[1][1]), args[1][2],  _generate_PiecewiseQuadratic_helper(args[2:end]))
-    else
-        return PiecewiseQuadratic(QuadraticPolynomial(args[1][1]), args[1][2])
-    end
-end
 
 
 

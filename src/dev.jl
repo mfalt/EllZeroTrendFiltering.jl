@@ -65,9 +65,9 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
     λ_curr = Λ.next
 
     Δ = QuadraticPolynomial(0., 0., 0.)
-    while ~isnull(λ_curr)
+    while λ_curr.left_endpoint != Inf
 
-        left_endpoint = unsafe_get(λ_curr).left_endpoint
+        left_endpoint = λ_curr.left_endpoint
 
         # TODO: This is probably not needed now..
         if left_endpoint == -1e9
@@ -75,14 +75,14 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
             left_endpoint = -10000.0
         end
 
-        right_endpoint = get_right_endpoint(unsafe_get(λ_curr))
+        right_endpoint = get_right_endpoint(λ_curr)
 
         if right_endpoint == 1e9
             #println("inf")
             right_endpoint = left_endpoint + 20000.0
         end
 
-        Δ .= ρ .- unsafe_get(λ_curr).p
+        Δ .= ρ .- λ_curr.p
 
         root1,root2 = roots(Δ)
 
@@ -90,7 +90,7 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
 
         if root1 > left_endpoint && root1 < right_endpoint
             #println("case 1:")
-            λ_prev, λ_curr = impose_quadratic_to_root(λ_prev, unsafe_get(λ_curr), root1, (left_endpoint+root1)/2, ρ, Δ)
+            λ_prev, λ_curr = impose_quadratic_to_root(λ_prev, λ_curr, root1, (left_endpoint+root1)/2, ρ, Δ)
             #println(Λ)
         end
 
@@ -100,7 +100,7 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
 
         if root2 > left_endpoint && root2 < right_endpoint
             #println("case 2:")
-            λ_prev, λ_curr = impose_quadratic_to_root(λ_prev, unsafe_get(λ_curr), root2, (root1 + root2)/2, ρ, Δ)
+            λ_prev, λ_curr = impose_quadratic_to_root(λ_prev, λ_curr, root2, (root1 + root2)/2, ρ, Δ)
             #println(Λ)
             if Δ.a > 0; return; end # Saves perhaps 5% of computation time
         end
@@ -110,7 +110,7 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
         end
 
         #println("case 3:")
-        λ_prev, λ_curr = impose_quadratic_to_endpoint(λ_prev, unsafe_get(λ_curr), (unsafe_get(λ_curr).left_endpoint + right_endpoint)/2, ρ, Δ)
+        λ_prev, λ_curr = impose_quadratic_to_endpoint(λ_prev, λ_curr, (λ_curr.left_endpoint + right_endpoint)/2, ρ, Δ)
         #println(Λ)
 
         if isnull(λ_curr)
@@ -191,8 +191,9 @@ end
 
 function add_quadratic2{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
 
+
     DEBUG && println("Inserting: ", ρ)
-    if isnull(Λ.next) # I.e. the piecewise quadratic object is empty, perhaps better to add dummy polynomial
+    if Λ.next.left_endpoint == Inf # I.e. the piecewise quadratic object is empty, perhaps better to add dummy polynomial
         insert(Λ, ρ, -1e9)
         return
     end
@@ -202,10 +203,11 @@ function add_quadratic2{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
 
     #left_endpoint = NaN
 
-    while ~isnull(λ_curr)
+    while λ_curr.left_endpoint != Inf #???
+        #global counter2 += 1
         DEBUG && println(Λ)
 
-        left_endpoint = unsafe_get(λ_curr).left_endpoint
+        left_endpoint = λ_curr.left_endpoint
 
         # TODO: This is probably not needed now..
         if left_endpoint == -1e9
@@ -213,23 +215,23 @@ function add_quadratic2{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
             left_endpoint = -10000.0
         end
 
-        right_endpoint = get_right_endpoint(unsafe_get(λ_curr))
+        right_endpoint = get_right_endpoint(λ_curr)
 
         if right_endpoint == 1e9
             #println("inf")
             right_endpoint = left_endpoint + 20000.0
         end
 
-        Δa = ρ.a - unsafe_get(λ_curr).p.a
-        Δb = ρ.b - unsafe_get(λ_curr).p.b
-        Δc = ρ.c - unsafe_get(λ_curr).p.c
+        Δa = ρ.a - λ_curr.p.a
+        Δb = ρ.b - λ_curr.p.b
+        Δc = ρ.c - λ_curr.p.c
 
         b2_minus_4ac =  Δb^2 - 4*Δa*Δc
 
         if Δa > 0 # ρ has greater curvature, i.e., ρ is smallest in the middle
             if b2_minus_4ac <= 0
                 # No intersections, old quadratic is smallest, just step forward
-                λ_prev = unsafe_get(λ_curr)
+                λ_prev = λ_curr
                 λ_curr = λ_prev.next
             else
 
@@ -244,21 +246,21 @@ function add_quadratic2{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
                 if root1 >= right_endpoint || root2 <= left_endpoint
                     # No intersections, old quadratic is smallest, step forward
                     DEBUG && println("Two intersections to the side")
-                    λ_prev = unsafe_get(λ_curr)
+                    λ_prev = λ_curr
                     λ_curr = λ_prev.next
                 elseif root1 <= left_endpoint && root2 >= right_endpoint
                     # No intersections, new quadratic is smallest
                     DEBUG && println("One intersections on either side")
-                    λ_prev, λ_curr = update_segment_new(λ_prev, unsafe_get(λ_curr), ρ)
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
                 elseif root1 > left_endpoint && root2 < right_endpoint
                     DEBUG && println("Two intersections within the interval")
-                    λ_prev, λ_curr = update_segment_old_new_old(unsafe_get(λ_curr), ρ, root1, root2)
+                    λ_prev, λ_curr = update_segment_old_new_old(λ_curr, ρ, root1, root2)
                 elseif root1 > left_endpoint
                     DEBUG && println("Root 1 within the interval")
-                    λ_prev, λ_curr = update_segment_old_new(unsafe_get(λ_curr), ρ, root1)
+                    λ_prev, λ_curr = update_segment_old_new(λ_curr, ρ, root1)
                 elseif root2 < right_endpoint
                     DEBUG && println("Root 2 within the interval")
-                    λ_prev, λ_curr = update_segment_new_old(λ_prev, unsafe_get(λ_curr), ρ, root2)
+                    λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, ρ, root2)
                 else
                     error("Shouldn't end up here")
                 end
@@ -266,7 +268,7 @@ function add_quadratic2{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
 
         elseif Δa < 0 # ρ has lower curvature, i.e., ρ is smallest on the sides
             if b2_minus_4ac <= 0
-                λ_prev, λ_curr = update_segment_new(λ_prev, unsafe_get(λ_curr), ρ)
+                λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
             else
                 # Compute the intersections
                 term1 = -(Δb / 2 / Δa)
@@ -277,18 +279,18 @@ function add_quadratic2{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
                 # Check where the intersections are and act accordingly
                 if root1 >= right_endpoint || root2 <= left_endpoint
                     # No intersections, ρ is smallest
-                    λ_prev, λ_curr = update_segment_new(λ_prev, unsafe_get(λ_curr), ρ)
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
                 elseif root1 <= left_endpoint && root2 >= right_endpoint
                     # No intersections, old quadratic is smallest, just step forward
-                    λ_prev = unsafe_get(λ_curr)
+                    λ_prev = λ_curr
                     λ_curr = λ_prev.next
                 elseif root1 > left_endpoint && root2 < right_endpoint
                     # Two intersections within the interval
-                    λ_prev, λ_curr = update_segment_new_old_new(λ_prev, unsafe_get(λ_curr), ρ, root1, root2)
+                    λ_prev, λ_curr = update_segment_new_old_new(λ_prev, λ_curr, ρ, root1, root2)
                 elseif root1 > left_endpoint
-                    λ_prev, λ_curr = update_segment_new_old(λ_prev, unsafe_get(λ_curr), ρ, root1)
+                    λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, ρ, root1)
                 elseif root2 < right_endpoint
-                    λ_prev, λ_curr = update_segment_old_new(unsafe_get(λ_curr), ρ, root2)
+                    λ_prev, λ_curr = update_segment_old_new(λ_curr, ρ, root2)
                 else
                     error("Shouldn't end up here")
                 end
@@ -298,9 +300,9 @@ function add_quadratic2{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
 
             if Δb == 0
                 if Δc >= 0
-                    λ_prev, λ_curr = update_segment_do_nothing(unsafe_get(λ_curr))
+                    λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
                 else
-                    λ_prev, λ_curr = update_segment_new(λ_prev, unsafe_get(λ_curr), ρ)
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
                 end
                 continue
             end
@@ -308,19 +310,19 @@ function add_quadratic2{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
             root = -Δc / Δb
             if Δb > 0
                 if root < left_endpoint
-                    λ_prev, λ_curr = update_segment_do_nothing(unsafe_get(λ_curr))
+                    λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
                 elseif root > right_endpoint
-                    λ_prev, λ_curr = update_segment_new(λ_prev, unsafe_get(λ_curr), ρ)
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
                 else
-                    λ_prev, λ_curr = update_segment_new_old(λ_prev, unsafe_get(λ_curr), ρ, root)
+                    λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, ρ, root)
                 end
             else
                 if root < left_endpoint
-                    λ_prev, λ_curr = update_segment_new(λ_prev, unsafe_get(λ_curr), ρ)
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
                 elseif root > right_endpoint
-                    λ_prev, λ_curr = update_segment_do_nothing(unsafe_get(λ_curr))
+                    λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
                 else
-                    λ_prev, λ_curr = update_segment_old_new(unsafe_get(λ_curr), ρ, root)
+                    λ_prev, λ_curr = update_segment_old_new(λ_curr, ρ, root)
                 end
             end
         end
@@ -405,10 +407,21 @@ end
     return v
 end
 
+
+
+
+#global counter1
+#global counter2
+
 """
 Find optimal fit
 """
 function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{QuadraticForm2{T},2}, M::Int, upper_bound=Inf)
+    #global counter1
+    #global counter2
+    #counter1 = 0
+    #counter2 = 0
+
     N = size(ℓ, 2)
 
     Λ = Array{PiecewiseQuadratic{T}}(M, N)
@@ -423,6 +436,7 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
                 for λ in Λ[m-1, ip]
                     p = λ.p
 
+                    #counter1 += 1
                     # ρ = dev.minimize_wrt_x2(
                     # ℓ[i,ip] + dev.QuadraticForm2{T}(@SMatrix([0. 0; 0 1])*p.a, @SVector([0., 1])*p.b, p.c))
                     # # Avoid ceting two extra QuadraticForm2

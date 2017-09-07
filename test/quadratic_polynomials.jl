@@ -24,4 +24,4 @@ include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 @test dev.find_minimum(dev.QuadraticPolynomial(9, 6, 2)) == (-1/3, 1)
 
 # (3x+1)^2 + 1 = 9x^2 + 6x + 2
-@test dev.unsafe_minimum(dev.QuadraticPolynomial(9.0, 6, 2)) == 1
+@test dev.unsafe_minimum(dev.QuadraticPolynomial(9.0, 6.0, 2.0)) == 1.0

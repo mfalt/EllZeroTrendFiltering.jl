@@ -11,21 +11,29 @@ dev.add_quadratic2(pwq, dev.QuadraticPolynomial([1, 0, 1.0]))
 
 #---
 # Tests with (2x^2 + 1) and (x^2 + 2) which have intersections in -1, +1
+# and 5/2*x(x-1) + 1 = 2.5x^2 - 2.5x + 1
 
 p1 = dev.QuadraticPolynomial([2.0, 0, 1])
 p2 = dev.QuadraticPolynomial([1.0, 0, 2])
+p3 = dev.QuadraticPolynomial(2.5, -2.5, 1.0)
 
 pwq1 = dev.create_new_pwq(p1)
-dev.add_quadratic2(pwq1, p2)
-
-println(pwq1)
-
-
+dev.add_quadratic(pwq1, p2)
+@test length(pwq1) == 3
+dev.add_quadratic(pwq1, p3)
+@test length(pwq1) == 4
 
 pwq2 = dev.create_new_pwq(p2)
+dev.add_quadratic(pwq2, p3)
+@test length(pwq2) == 3
 dev.add_quadratic(pwq2, p1)
+@test length(pwq2) == 4
 
-println(pwq1)
+@test pwq1[1].p === pwq2[1].p == p1
+@test pwq1[2].left_endpoint == pwq2[2].left_endpoint == -1
+@test pwq1[2].p === pwq2[2].p == p2
+@test pwq1[3].left_endpoint == pwq2[3].left_endpoint == 0
+@test pwq1[3].p === pwq2[3].p
 
 #---
 
@@ -36,10 +44,18 @@ function verify_piecewise_quadratic(c_mat)
 
     poly_list = [dev.QuadraticPolynomial(c_mat[k, :]) for k in 1:size(c_mat,1)]
 
+    xgrid = linspace(-2,2)
+    plot(show=true)
+    for p in poly_list
+        plot!(xgrid, p.(xgrid))
+    end
+
     # Insert quadratics into piecewise quadfatic
     pwq = dev.create_new_pwq()
     for p in poly_list
+        println("Hej")
         dev.add_quadratic2(pwq, p)
+        println(pwq)
     end
 
     # Check that the intersections between the quadratics are in increasing order
@@ -70,7 +86,7 @@ function verify_piecewise_quadratic(c_mat)
 
 end
 
-
+#---
 c_mat1 = [
 2.53106  1.59097   1.60448
 2.51349  0.681205  1.60553
@@ -78,6 +94,7 @@ c_mat1 = [
 ]
 verify_piecewise_quadratic(c_mat1)
 
+#---
 c_mat2 = [
 2.01532  1.59269   1.65765
 2.50071  1.56421   1.53899
@@ -85,7 +102,17 @@ c_mat2 = [
 ]
 verify_piecewise_quadratic(c_mat2)
 
+#---
 
+c_mat3 = [
+#2.69548  1.50706   1.95186
+#2.86858  0.990155  1.86534
+2.42298  0.796953  1.02011
+2.45055  1.32235   1.4894
+2.1762   0.855014  1.0647
+]
+verify_piecewise_quadratic(c_mat3)
+#---
 # Random test case
 N = 10
 c_mat_rand = [2+rand(N) 2*rand(N) 1+rand(N)]
