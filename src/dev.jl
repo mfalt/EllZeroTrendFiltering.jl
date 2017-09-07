@@ -173,6 +173,7 @@ function add_quadratic2{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
 
     DEBUG && println("Inserting: ", ρ)
     if Λ.next.left_endpoint == Inf # I.e. the piecewise quadratic object is empty, perhaps better to add dummy polynomial
+        ρ.has_been_used = true
         insert(Λ, ρ, -Inf)
         return
     end
@@ -307,6 +308,7 @@ end
 end
 
 @inline function update_segment_new(λ_prev, λ_curr, ρ)
+    ρ.has_been_used = true
     if λ_prev.p === ρ
         λ_prev.next = λ_curr.next
         v1, v2 = λ_prev, λ_curr.next
@@ -318,6 +320,7 @@ end
 end
 
 @inline function update_segment_old_new(λ_curr, ρ, break1)
+    ρ.has_been_used = true
     new_pwq_segment =  PiecewiseQuadratic(ρ, break1, λ_curr.next)
     λ_curr.next = new_pwq_segment
     return new_pwq_segment, new_pwq_segment.next
@@ -327,6 +330,7 @@ end
     if λ_prev.p === ρ
         λ_curr.left_endpoint = break1
     else
+        ρ.has_been_used = true
         λ_prev.next = PiecewiseQuadratic(ρ, λ_curr.left_endpoint, λ_curr)
         λ_curr.left_endpoint = break1
     end
@@ -334,11 +338,13 @@ end
 end
 
 @inline function update_segment_new_old_new(λ_prev, λ_curr, ρ, break1, break2)
+    ρ.has_been_used = true
     update_segment_new_old(λ_prev, λ_curr, ρ, break1)
     return update_segment_old_new(λ_curr, ρ, break2)
 end
 
 @inline function update_segment_old_new_old(λ_curr, ρ, break1, break2)
+    ρ.has_been_used = true
     second_old_pwq_segment =  PiecewiseQuadratic(λ_curr.p, break2, λ_curr.next)
     new_pwq_segment =  PiecewiseQuadratic(ρ, break1, second_old_pwq_segment)
     λ_curr.next = new_pwq_segment
@@ -354,7 +360,7 @@ end
 # Takes a quadratic form in [x1; x2] and a polynomial in x2
 # and returns the minimum of the sum wrt to x2,
 # i.e. a polynomial of x1
-@inline function minimize_wrt_x2_fast{T}(qf::QuadraticForm2{T},p::QuadraticPolynomial{T})
+@inline function minimize_wrt_x2_fast{T}(qf::QuadraticForm2{T},p::QuadraticPolynomial{T},ρ=QuadraticPolynomial{T}())
 
     # Create quadratic form representing the sum of qf and p
 
@@ -364,23 +370,22 @@ end
 
     P22_new = P[2,2] + p.a
 
-    v = QuadraticPolynomial{T}()
     if P22_new > 0
-        v.a = P[1,1] - P[1,2]^2 / P22_new
-        v.b = q[1] - P[1,2]*(q[2]+p.b) / P22_new
-        v.c = (r+p.c) - (q[2]+p.b)^2 / P22_new / 4
+        ρ.a = P[1,1] - P[1,2]^2 / P22_new
+        ρ.b = q[1] - P[1,2]*(q[2]+p.b) / P22_new
+        ρ.c = (r+p.c) - (q[2]+p.b)^2 / P22_new / 4
     elseif P22_new == 0 #|| qf.P11 == 0 || (qf.q2+p.b) == 0 #why are the two last conditions needed?
-        v.a = P[1,1]
-        v.b = q[1]
-        v.c = r+p.c
+        ρ.a = P[1,1]
+        ρ.b = q[1]
+        ρ.c = r+p.c
     else
         # FIXME: what are these condtions?
         # There are some special cases, but disregards these
-        v.a = 0.0
-        v.b = 0.0
-        v.c = 0.0
+        ρ.a = 0.0
+        ρ.b = 0.0
+        ρ.c = 0.0
     end
-    return v
+    return ρ
 end
 
 
@@ -404,6 +409,8 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
 
     Λ[1, 1:end-1] .= Λ_0
 
+
+    ρ = QuadraticPolynomial{T}()
     for m=2:M
         for i=N-m:-1:1
             Λ_new = create_new_pwq()
@@ -413,16 +420,21 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
                     p = λ.p
 
                     #counter1 += 1
-                    ρ = dev.minimize_wrt_x2_fast(ℓ[i,ip], p)
+
+                    dev.minimize_wrt_x2_fast(ℓ[i,ip], p, ρ)
 
                     if unsafe_minimum(ρ) > upper_bound
                         continue
                     end
 
-                    ρ.time_index = ip
-                    ρ.ancestor = p
+                    add_quadratic2(Λ_new, ρ)
 
-                    dev.add_quadratic2(Λ_new, ρ)
+                    if ρ.has_been_used == true
+                        ρ.time_index = ip
+                        ρ.ancestor = p
+                        ρ = QuadraticPolynomial{T}()
+                        ρ.has_been_used = false
+                    end
                 end
             end
             Λ[m, i] = Λ_new

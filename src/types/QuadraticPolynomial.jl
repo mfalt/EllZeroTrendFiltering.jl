@@ -6,15 +6,16 @@ mutable struct QuadraticPolynomial{T<:Real}
 a::T
 b::T
 c::T
-time_index::Int
+has_been_used::Bool
+time_index::Int32
 ancestor::QuadraticPolynomial{T}
 function QuadraticPolynomial{T}(a::T, b::T, c::T) where {T}
     # @assert a ≥ 0, # Δ may have negative a ...
-    new(a, b, c,-1)
+    new(a, b, c, false, -1)
 end
-function QuadraticPolynomial{T}(a::T, b::T, c::T, time_index, ancestor) where {T}
+function QuadraticPolynomial{T}(a::T, b::T, c::T, has_been_used, time_index, ancestor) where {T}
     @assert a ≥ 0
-    new(a, b, c, time_index, ancestor)
+    new(a, b, c, has_been_used, time_index, ancestor)
 end
 QuadraticPolynomial{T}() where {T} = new()
 end

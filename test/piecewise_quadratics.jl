@@ -40,21 +40,26 @@ dev.add_quadratic2(pwq2, p1)
 # Given a matrix with coefficients for quadratic polynomials this function
 # constructs the quadratic polynomials and inserts them into a piecewise
 # quadratic object
-function verify_piecewise_quadratic(c_mat)
+function verify_piecewise_quadratic(c_mat, show_plot=false)
 
     poly_list = [dev.QuadraticPolynomial(c_mat[k, :]) for k in 1:size(c_mat,1)]
 
-    xgrid = linspace(-2,2)
-    plot(show=true)
-    for p in poly_list
-        plot!(xgrid, p.(xgrid))
-    end
+    xgrid = linspace(-2,2
 
+    if show_plot
+        plot(show=true)
+        for p in poly_list
+            plot!(xgrid, p.(xgrid))
+        end
+    end
+    
     # Insert quadratics into piecewise quadfatic
     pwq = dev.create_new_pwq()
     for p in poly_list
-        println("Hej")
+        println("Inserting: ", p)
         dev.add_quadratic2(pwq, p)
+
+        println("After Insertion: ")
         println(pwq)
     end
 
