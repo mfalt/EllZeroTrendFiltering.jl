@@ -1,7 +1,16 @@
 # Quadratic form of 2 variables, used for representing the transition costs ℓ
-type QuadraticForm2{T}
+struct QuadraticForm2{T}
     P::SMatrix{2,2,T,4}
     q::SVector{2,T}
+    r::T
+end
+
+struct QuadraticFormTest{T}
+    P11::T
+    P12::T
+    P22::T
+    q1::T
+    q2::T
     r::T
 end
 

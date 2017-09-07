@@ -1,7 +1,7 @@
 # Quadratic Polynomial to represent cost-to-go function,
 # keeos track of its "ancestor" to simplify the recovery of the solution
-# TODO: penality for making mutable, so ancestor can be set later on,
-# or set ancestor at creation
+# has_been_used keeps track of if the Quadratic polynimial has been inserted
+# into a piecewise quadratic, otherwise it is reused
 mutable struct QuadraticPolynomial{T<:Real}
 a::T
 b::T
@@ -87,46 +87,4 @@ function roots{T}(p::QuadraticPolynomial{T})
         term = -p.c / p.b
         return term, Inf
     end
-end
-
-
-"""
-n, intersec = intersections{T}(p1::QuadraticPolynomial{T},p2::QuadraticPolynomial{T})
-returns number of intersections `n` and a 2-vector `intersec` containing the intersection points
-in the first `n` elements.
-"""
-function intersections{T}(p1::QuadraticPolynomial{T},p2::QuadraticPolynomial{T})
-    a = p1.a-p2.a
-    b = p1.b-p2.b
-    c = p1.c-p2.c
-    n = 0
-    intersec = [T(NaN), T(NaN)]
-    if a == 0
-        #Numerical problems if division, 0 or 1 intersections
-        if b == 0
-            # 0 intersections
-            #return 0, [T(NaN), T(NaN)]
-        else
-            # 1 intersection
-            n = 1
-            intersec[1] = -c/b
-            #return 1, [-c/b, T(NaN)]
-        end
-    else
-        # 0 or 2 intersections, possibly in same point
-        r = b^2 - 4c*a
-        if r < 0
-            # 0 intersections
-            #return 0, [T(NaN), T(NaN)]
-        else
-            # 2 intersections
-            r = sqrt(r)/(2a)                 #sqrt(b^2-4ca)/2a
-            v = -b/(2a)
-            n = 2
-            intersec[1] = v-r
-            intersec[2] = v+r
-            #return 2, [v-r, v+r]
-        end
-    end
-    return n, intersec
 end

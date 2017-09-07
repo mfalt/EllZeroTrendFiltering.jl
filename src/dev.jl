@@ -34,142 +34,6 @@ Inserts a quadratic polynomial ρ into the linked list Λ which represents a pie
 """
 function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
 
-    if isnull(Λ.next) # I.e. the piecewise quadratic object is empty, perhaps better to add dummy polynomial
-        insert(Λ, ρ, -1e9)
-        return
-    end
-
-
-    λ_prev = Λ
-    λ_curr = Λ.next
-
-    Δ = QuadraticPolynomial(0., 0., 0.)
-    while λ_curr.left_endpoint != Inf
-
-        left_endpoint = λ_curr.left_endpoint
-
-        # TODO: This is probably not needed now..
-        if left_endpoint == -1e9
-            #println("minus-inf")
-            left_endpoint = -10000.0
-        end
-
-        right_endpoint = get_right_endpoint(λ_curr)
-
-        if right_endpoint == 1e9
-            #println("inf")
-            right_endpoint = left_endpoint + 20000.0
-        end
-
-        Δ .= ρ .- λ_curr.p
-
-        root1,root2 = roots(Δ)
-
-        #println(root1, " : ", root2, " .... (", (left_endpoint, right_endpoint))
-
-        if root1 > left_endpoint && root1 < right_endpoint
-            #println("case 1:")
-            λ_prev, λ_curr = impose_quadratic_to_root(λ_prev, λ_curr, root1, (left_endpoint+root1)/2, ρ, Δ)
-            #println(Λ)
-        end
-
-        if isnull(λ_curr)
-            break
-        end
-
-        if root2 > left_endpoint && root2 < right_endpoint
-            #println("case 2:")
-            λ_prev, λ_curr = impose_quadratic_to_root(λ_prev, λ_curr, root2, (root1 + root2)/2, ρ, Δ)
-            #println(Λ)
-            if Δ.a > 0; return; end # Saves perhaps 5% of computation time
-        end
-
-        if isnull(λ_curr)
-            break
-        end
-
-        #println("case 3:")
-        λ_prev, λ_curr = impose_quadratic_to_endpoint(λ_prev, λ_curr, (λ_curr.left_endpoint + right_endpoint)/2, ρ, Δ)
-        #println(Λ)
-
-        if isnull(λ_curr)
-            break
-        end
-    end
-
-end
-
-
-
-# TODO Possibly just insert all roots, and then do the comparisons?
-# Leads to some unnecessary nodes being created but is perhaps simplier?
-function impose_quadratic_to_root{T}(λ_prev::PiecewiseQuadratic{T}, λ_curr::PiecewiseQuadratic{T}, root::T, midpoint::T, ρ::QuadraticPolynomial{T}, Δ::QuadraticPolynomial{T})
-    if Δ((λ_curr.left_endpoint + root)/2) < 0 # ρ is smallest, i.e., should be inserted
-        if λ_prev.p === ρ
-            #println("1")
-            λ_curr.left_endpoint = root
-            return λ_prev, Nullable{PiecewiseQuadratic{Float64}}(λ_curr)
-        else
-            #println("2")
-
-            #λ_new = insert(λ_prev, ρ, λ_curr.left_endpoint)
-            #λ_curr.left_endpoint = root
-            #return λ_new, λ_curr
-
-            λ_new = insert(λ_curr, λ_curr.p, root)
-            λ_curr.p = ρ
-            return λ_curr, λ_new
-        end
-    else
-        #println("3")
-        λ_new = insert(λ_curr, λ_curr.p, root) # insert new interval, but defer deciding on wheather λ_curr.p or ρ is smallest
-        return λ_curr, λ_new
-    end
-end
-
-@inline function impose_quadratic_to_endpoint{T}(λ_prev::PiecewiseQuadratic{T}, λ_curr::PiecewiseQuadratic{T}, midpoint, ρ, Δ)
-    local v1, v2
-    if Δ(midpoint) < 0  # ρ is smallest, i.e., should be inserted
-        if λ_prev.p === ρ
-            #println("1")
-            λ_new = delete_next(λ_prev)
-            v1, v2 = λ_prev, λ_new
-        else
-            #println("2")
-            λ_curr.p = ρ
-            v1, v2 = λ_curr, λ_curr.next
-        end
-    else
-        # Do nothing
-        #println("3")
-        v1, v2 = λ_curr, λ_curr.next
-    end
-    return v1, v2 #Single point of exit
-end
-
-function minimize_wrt_x2(qf::QuadraticForm2)
-    P = qf.P
-    q = qf.q
-    r = qf.r
-
-    if P[2,2] > 0
-        QuadraticPolynomial(P[1,1] - P[1,2]^2 / P[2,2],
-        q[1] - P[1,2]*q[2] / P[2,2],
-        r - q[2]^2 / P[2,2]/ 4)
-    elseif P[2,2] == 0 || P[1,2] == 0 || q[2] == 0
-        QuadraticPolynomial(P[1,1], q[1], r)
-    else
-        # There are some special cases, but disregards these
-        QuadraticPolynomial(0.,0.,-Inf)
-    end
-end
-
-
-
-##
-
-function add_quadratic2{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
-
 
     DEBUG && println("Inserting: ", ρ)
     if Λ.next.left_endpoint == Inf # I.e. the piecewise quadratic object is empty, perhaps better to add dummy polynomial
@@ -351,19 +215,10 @@ end
     return second_old_pwq_segment, second_old_pwq_segment.next
 end
 
-###
-
-
-
-
-
 # Takes a quadratic form in [x1; x2] and a polynomial in x2
 # and returns the minimum of the sum wrt to x2,
 # i.e. a polynomial of x1
-@inline function minimize_wrt_x2_fast{T}(qf::QuadraticForm2{T},p::QuadraticPolynomial{T},ρ=QuadraticPolynomial{T}())
-
-    # Create quadratic form representing the sum of qf and p
-
+@inline function minimize_wrt_x2{T}(qf::QuadraticForm2{T},p::QuadraticPolynomial{T},ρ=QuadraticPolynomial{T}())
     P = qf.P
     q = qf.q
     r = qf.r
@@ -421,13 +276,13 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
 
                     #counter1 += 1
 
-                    dev.minimize_wrt_x2_fast(ℓ[i,ip], p, ρ)
+                    minimize_wrt_x2(ℓ[i,ip], p, ρ)
 
                     if unsafe_minimum(ρ) > upper_bound
                         continue
                     end
 
-                    add_quadratic2(Λ_new, ρ)
+                    add_quadratic(Λ_new, ρ)
 
                     if ρ.has_been_used == true
                         ρ.time_index = ip
@@ -442,10 +297,6 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
     end
     return Λ
 end
-
-
-
-
 
 
 
@@ -500,7 +351,6 @@ function compute_transition_costs(g, t::AbstractArray)
         I_g2[i] = I_g2[i-1] + quadgk(t -> g(t)^2, t[i-1], t[i], reltol=tol)[1]
         I_tg[i] = I_tg[i-1] + quadgk(t -> t*g(t), t[i-1], t[i], reltol=tol)[1]
     end
-
 
     ℓ = Array{QuadraticForm2{T}}(N-1,N)
 
