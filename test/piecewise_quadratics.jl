@@ -18,15 +18,15 @@ p2 = dev.QuadraticPolynomial([1.0, 0, 2])
 p3 = dev.QuadraticPolynomial(2.5, -2.5, 1.0)
 
 pwq1 = dev.create_new_pwq(p1)
-dev.add_quadratic(pwq1, p2)
+dev.add_quadratic2(pwq1, p2)
 @test length(pwq1) == 3
-dev.add_quadratic(pwq1, p3)
+dev.add_quadratic2(pwq1, p3)
 @test length(pwq1) == 4
 
 pwq2 = dev.create_new_pwq(p2)
-dev.add_quadratic(pwq2, p3)
+dev.add_quadratic2(pwq2, p3)
 @test length(pwq2) == 3
-dev.add_quadratic(pwq2, p1)
+dev.add_quadratic2(pwq2, p1)
 @test length(pwq2) == 4
 
 @test pwq1[1].p === pwq2[1].p == p1
@@ -59,18 +59,21 @@ function verify_piecewise_quadratic(c_mat)
     end
 
     # Check that the intersections between the quadratics are in increasing order
+    println("Checking that intersections points are increasing: ")
     for λ in pwq
         @test λ.left_endpoint < dev.get_right_endpoint(λ)
     end
 
     # Check for continuity of the piecewise quadratic
+    println("Checking continuity: ")
     for λ in pwq
-        if isnull(λ.next)
+        x = dev.get_right_endpoint(λ)
+        if x == Inf
             break
         end
-        x = get(λ.next).left_endpoint
-        println("Continutiy diff: ", λ.p(x) - get(λ.next).p(x))
-        @test λ.p(x) ≈ get(λ.next).p(x)
+
+        println("Continutiy diff: ", λ.p(x) - λ.next.p(x))
+        @test λ.p(x) ≈ λ.next.p(x)
     end
 
     # Check that the piecewise quadratic is smaller than all the quadratics
@@ -105,8 +108,6 @@ verify_piecewise_quadratic(c_mat2)
 #---
 
 c_mat3 = [
-#2.69548  1.50706   1.95186
-#2.86858  0.990155  1.86534
 2.42298  0.796953  1.02011
 2.45055  1.32235   1.4894
 2.1762   0.855014  1.0647

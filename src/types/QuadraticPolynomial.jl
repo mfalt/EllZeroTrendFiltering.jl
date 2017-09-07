@@ -6,16 +6,17 @@ mutable struct QuadraticPolynomial{T<:Real}
 a::T
 b::T
 c::T
-ancestor::Nullable{QuadraticPolynomial{T}}
 time_index::Int
+ancestor::QuadraticPolynomial{T}
 function QuadraticPolynomial{T}(a::T, b::T, c::T) where {T}
     # @assert a ≥ 0, # Δ may have negative a ...
-    new(a, b, c, Nullable{QuadraticPolynomial{T}}(),-1)
+    new(a, b, c,-1)
 end
-function QuadraticPolynomial{T}(a::T, b::T, c::T, ancestor, time_index) where {T}
+function QuadraticPolynomial{T}(a::T, b::T, c::T, time_index, ancestor) where {T}
     @assert a ≥ 0
-    new(a, b, c, ancestor, time_index)
+    new(a, b, c, time_index, ancestor)
 end
+QuadraticPolynomial{T}() where {T} = new()
 end
 
 QuadraticPolynomial{T}(a::T,b::T,c::T) = QuadraticPolynomial{T}(a,b,c)
@@ -70,6 +71,22 @@ No checks of this is done
     return (-p.b^2/4/p.a + p.c)::T
 end
 
+
+function roots{T}(p::QuadraticPolynomial{T})
+    b2_minus_4ac = p.b^2 - 4*p.a*p.c
+    if b2_minus_4ac < 0
+        return NaN, NaN
+    end
+
+    if p.a != 0
+        term1 = (p.b / 2 / p.a)
+        term2 = sqrt(b2_minus_4ac) / 2 / abs(p.a)
+        return -term1-term2, -term1+term2
+    else
+        term = -p.c / p.b
+        return term, Inf
+    end
+end
 
 
 """

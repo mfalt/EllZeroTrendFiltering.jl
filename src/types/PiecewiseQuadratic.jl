@@ -35,7 +35,7 @@ end
 Creates piecewise-quadratic polynomial containing one element
 """
 function create_new_pwq(p::QuadraticPolynomial)
-    pwq = PiecewiseQuadratic(p, -1e9, PiecewiseQuadratic{Float64}())
+    pwq = PiecewiseQuadratic(p, -Inf, PiecewiseQuadratic{Float64}())
     return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, pwq)
 end
 
@@ -85,11 +85,7 @@ function delete_next{T}(pwq::PiecewiseQuadratic{T})
 end
 
 function get_right_endpoint(λ::PiecewiseQuadratic)
-    if isnull(λ.next)
-        return 1e9
-    else
-        return unsafe_get(λ.next).left_endpoint
-    end
+    return unsafe_get(λ.next).left_endpoint
 end
 
 
@@ -106,13 +102,13 @@ function show(io::IO, Λ::PiecewiseQuadratic)
     #@printf("PiecewiseQuadratic (%i elems):\n", length(Λ))
 
     for λ in Λ
-        if λ.left_endpoint == -1e9
+        if λ.left_endpoint == -Inf
             print(io, "[  -∞ ,")
         else
             @printf(io, "[%3.2f,", λ.left_endpoint)
         end
 
-        if get_right_endpoint(λ) == 1e9
+        if get_right_endpoint(λ) == Inf
             print(io, " ∞  ]")
         else
             @printf(io, " %3.2f]", get_right_endpoint(λ))
@@ -180,6 +176,24 @@ function plot_pwq(Λ::PiecewiseQuadratic)
     return p
 end
 
+function find_minimum(Λ::PiecewiseQuadratic)
+    # May assume that the minimum is at the staionary point of the polynomial
+    # TODO: True?
+
+    f_opt = Inf
+    p_opt = Λ.p # The segment containing the smallest polynimal
+    x_opt = NaN
+
+    for λ in Λ
+        x, f = find_minimum(λ.p)
+        if f < f_opt
+            f_opt = f
+            x_opt = x
+            p_opt = λ.p
+        end
+    end
+    return p_opt, x_opt, f_opt
+end
 
 
 
