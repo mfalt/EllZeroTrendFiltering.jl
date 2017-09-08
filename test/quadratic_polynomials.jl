@@ -7,7 +7,6 @@ include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 
 
 ### Minimization of quadratic polynomials ###
-
 @test dev.find_minimum(dev.QuadraticPolynomial(1 ,0 ,0)) == (0, 0)
 @test dev.find_minimum(dev.QuadraticPolynomial(1 ,0 ,1)) == (0, 1)
 
