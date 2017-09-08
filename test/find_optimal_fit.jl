@@ -8,7 +8,7 @@ g = sin
 
 @time ℓ = dev.compute_transition_costs(g, t);
 
-Λ_0 = [dev.create_new_pwq(dev.minimize_wrt_x2(ℓ[i, N])) for i in 1:N-1];
+Λ_0 = [dev.create_new_pwq(dev.minimize_wrt_x2(ℓ[i, N], dev.QuadraticPolynomial(0.0, 0.0, 0.0))) for i in 1:N-1];
 
 @time Λ = dev.find_optimal_fit(Λ_0, ℓ, 7);
 
@@ -26,6 +26,6 @@ g = sin
 @test f_dp5 ≈ 0.09174442455649423
 
 ## Test of brute force optimization
-m = 5
+m = 3
 @time I_bf, _, f_bf = dev.brute_force_optimization(ℓ, m-1);
 @test I_bf ==  [1, 21, 30, 50]

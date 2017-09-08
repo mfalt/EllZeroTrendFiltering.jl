@@ -63,9 +63,9 @@ function getindex(Λ::dev.PiecewiseQuadratic, n::Int64)
         error("Attempted to access index <= 0 in piecewise quadratic.")
     end
 
-    λ = get(Λ.next)
+    λ = Λ.next
     for k=1:n-1
-        λ = get(λ.next)
+        λ = λ.next
     end
     return λ
 end

@@ -44,9 +44,8 @@ function verify_piecewise_quadratic(c_mat, show_plot=false)
 
     poly_list = [dev.QuadraticPolynomial(c_mat[k, :]) for k in 1:size(c_mat,1)]
 
-    xgrid = linspace(-2,2
-
     if show_plot
+        xgrid = linspace(-2,2)
         plot(show=true)
         for p in poly_list
             plot!(xgrid, p.(xgrid))
