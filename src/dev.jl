@@ -16,7 +16,6 @@ import Base.==
 import IterTools
 
 using StaticArrays
-using PyPlot
 using Polynomials
 using QuadGK
 
@@ -300,6 +299,52 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
     return Λ
 end
 
+
+
+
+
+"""
+Find optimal fit
+"""
+function regularize{T}(Λ_0::PiecewiseQuadratic{T}, ℓ::Array{QuadraticForm2{T},2}, reg_param::T, upper_bound=Inf)
+    N = size(ℓ, 2)
+
+    Λ = Vector{PiecewiseQuadratic{T}}(N)
+
+    Λ[N] = Λ_0
+
+    ρ = QuadraticPolynomial{T}()
+
+    for i=N-1:-1:1
+        Λ_new = create_new_pwq()
+        for ip=i+1:N
+
+            for λ in Λ[ip]
+                p = λ.p
+                #counter1 += 1
+
+                minimize_wrt_x2(ℓ[i,ip], p, ρ)
+                ρ.c += reg_param
+
+                if unsafe_minimum(ρ) > upper_bound
+                    continue
+                end
+
+                add_quadratic(Λ_new, ρ)
+
+                if ρ.has_been_used == true
+                    ρ.time_index = ip
+                    ρ.ancestor = p
+                    ρ = QuadraticPolynomial{T}()
+                    ρ.has_been_used = false
+                end
+            end
+        end
+        Λ[i] = Λ_new
+    end
+
+    return Λ
+end
 
 
 function recover_solution{T}(Λ::PiecewiseQuadratic{T}, first_index=1, last_index=-1)

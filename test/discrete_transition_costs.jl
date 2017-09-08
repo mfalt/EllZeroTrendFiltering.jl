@@ -1,5 +1,4 @@
 using Base.Test
-using PyPlot
 using Interpolations
 include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 
