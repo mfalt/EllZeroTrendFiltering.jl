@@ -14,9 +14,7 @@ import Base.getindex
 import Base.==
 
 import IterTools
-
 using StaticArrays
-using Polynomials
 using QuadGK
 
 
