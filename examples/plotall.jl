@@ -39,21 +39,26 @@ function plotall(Λ,ℓ,t,g, both=true)
     return p
 end
 
-function brownian(t)
-    N = length(t)
-    ran = cumsum(0.1*randn(10*N))
-    return t -> ran[floor(Int64, t*10/2pi*(N-1))+1]
-end
-N = 7
-t = linspace(0,2π,N)
-#g = Poly([0,0,1,-1])
+##
+srand(9)
+N = 20
+ran = cumsum(0.1*randn(10*N))
 
-g = brownian(t)
-ℓ = dev.compute_transition_costs(g, t);
+t = linspace(0,1,N)
 
-Λ_0 = [dev.create_new_pwq(dev.minimize_wrt_x2(ℓ[i, N])) for i in 1:N-1];
-Λ, t2, _, _, _ = @timed dev.find_optimal_fit(Λ_0, ℓ, N-1);
+g6(t) = ran[floor(Int64, t*10(N-1)+1)]
+ℓ = dev.compute_transition_costs(g6, t);
+
+Λ_0 = [dev.create_new_pwq(dev.minimize_wrt_x2(ℓ[i, N], dev.QuadraticPolynomial{Float64}(0.,0.,0.))) for i in 1:N-1];
+Λ, t2, _, _, _ = @timed dev.find_optimal_fit(Λ_0, ℓ, 19);
+##
+#[(isassigned(Λ,i) ? length(Λ[i]) : 0) for i in eachindex(Λ)]
+lengths = reshape([(isassigned(Λ,i) ? length(Λ[i]) : 0) for i in eachindex(Λ)], size(Λ))
 plotly()
-p = plotall(Λ,ℓ,t,g, true);
-
-plot!(p, show=true)
+heatmap(lengths, show=true)
+# p = plotall(Λ,ℓ,t,g, true);
+# @time I2, y2, f2 = dev.recover_solution(Λ[19, 1], 1, N)
+# Y2, _ = dev.find_optimal_y_values(ℓ, I2)
+# plot(linspace(1,N,20*N), g5.(linspace(1,N,20*N)))
+# plot!(I2, Y2)
+# plot!(p, show=true)

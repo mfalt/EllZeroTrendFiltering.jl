@@ -2,7 +2,7 @@ using Base.Test
 
 include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 
-pwq = dev.generate_PiecewiseQuadratic([([2.0, 2, 1], -Inf), ([2.0, -2, 1], 0.0)])
+pwq = dev.generate_PiecewiseQuadratic(([2.0, 2, 1], -Inf), ([2.0, -2, 1], 0.0))
 
 @test length(pwq) == 2
 dev.add_quadratic(pwq, dev.QuadraticPolynomial([1, 0, 1.0]))

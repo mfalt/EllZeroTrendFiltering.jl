@@ -26,6 +26,7 @@ include("types/PiecewiseQuadratic.jl")
 include("types/QuadraticForm2.jl")
 
 global const DEBUG = false
+global const DEBUG2 = false
 global const COUNTER_TEST = false
 
 # TODO come up with better symbol for ρ
@@ -131,7 +132,7 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
             end
         else # a == 0.0
             DEBUG && pritnln("Δa == 0")
-
+            DEBUG2 && println("Δa == 0 : $ρ")
             if Δb == 0
                 if Δc >= 0
                     λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
@@ -156,6 +157,7 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
                 elseif root > right_endpoint
                     λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
                 else
+                    DEBUG2 && println("Special case")
                     λ_prev, λ_curr = update_segment_old_new(λ_curr, ρ, root)
                 end
             end

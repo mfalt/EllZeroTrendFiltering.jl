@@ -39,16 +39,17 @@ function create_new_pwq(p::QuadraticPolynomial)
     return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, pwq)
 end
 
-function generate_PiecewiseQuadratic(args)
-    return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, _generate_PiecewiseQuadratic_helper(args))
+function generate_PiecewiseQuadratic(args::Tuple...)
+    return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, _generate_PiecewiseQuadratic_helper(args...))
 end
 
-function _generate_PiecewiseQuadratic_helper(args)
-    if Base.length(args) > 1
-        return PiecewiseQuadratic(QuadraticPolynomial(args[1][1]), args[1][2],  _generate_PiecewiseQuadratic_helper(args[2:end]))
-    else
-        return PiecewiseQuadratic(QuadraticPolynomial(args[1][1]), args[1][2])
-    end
+
+function _generate_PiecewiseQuadratic_helper(arg)
+    return PiecewiseQuadratic(QuadraticPolynomial(arg[1]), arg[2])
+end
+
+function _generate_PiecewiseQuadratic_helper(arg, args...)
+    return PiecewiseQuadratic(QuadraticPolynomial(arg[1]), arg[2],  _generate_PiecewiseQuadratic_helper(args...))
 end
 
 
