@@ -2,39 +2,7 @@ using Base.Test
 
 include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 
-pwq = dev.generate_PiecewiseQuadratic(([2.0, 2, 1], -Inf), ([2.0, -2, 1], 0.0))
-
-@test length(pwq) == 2
-dev.add_quadratic(pwq, dev.QuadraticPolynomial([1, 0, 1.0]))
-
-@test length(pwq) == 3
-
-#---
-# Tests with (2x^2 + 1) and (x^2 + 2) which have intersections in -1, +1
-# and 5/2*x(x-1) + 1 = 2.5x^2 - 2.5x + 1
-
-p1 = dev.QuadraticPolynomial([2.0, 0, 1])
-p2 = dev.QuadraticPolynomial([1.0, 0, 2])
-p3 = dev.QuadraticPolynomial(2.5, -2.5, 1.0)
-
-pwq1 = dev.create_new_pwq(p1)
-dev.add_quadratic(pwq1, p2)
-@test length(pwq1) == 3
-dev.add_quadratic(pwq1, p3)
-@test length(pwq1) == 4
-
-pwq2 = dev.create_new_pwq(p2)
-dev.add_quadratic(pwq2, p3)
-@test length(pwq2) == 3
-dev.add_quadratic(pwq2, p1)
-@test length(pwq2) == 4
-
-@test pwq1[1].p === pwq2[1].p == p1
-@test pwq1[2].left_endpoint == pwq2[2].left_endpoint == -1
-@test pwq1[2].p === pwq2[2].p == p2
-@test pwq1[3].left_endpoint == pwq2[3].left_endpoint == 0
-@test pwq1[3].p === pwq2[3].p
-
+global const TEST_PRINT_LEVEL = 0
 #---
 
 # Given a matrix with coefficients for quadratic polynomials this function
@@ -55,28 +23,28 @@ function verify_piecewise_quadratic(c_mat, show_plot=false)
     # Insert quadratics into piecewise quadfatic
     pwq = dev.create_new_pwq()
     for p in poly_list
-        println("Inserting: ", p)
+        TEST_PRINT_LEVEL > 0 && println("Inserting: ", p)
         dev.add_quadratic(pwq, p)
 
-        println("After Insertion: ")
-        println(pwq)
+        TEST_PRINT_LEVEL > 0 && println("After Insertion: ")
+        TEST_PRINT_LEVEL > 0 && println(pwq)
     end
 
     # Check that the intersections between the quadratics are in increasing order
-    println("Checking that intersections points are increasing: ")
+    TEST_PRINT_LEVEL > 0 && println("Checking that intersections points are increasing: ")
     for λ in pwq
         @test λ.left_endpoint < dev.get_right_endpoint(λ)
     end
 
     # Check for continuity of the piecewise quadratic
-    println("Checking continuity: ")
+    TEST_PRINT_LEVEL > 0 && println("Checking continuity: ")
     for λ in pwq
         x = dev.get_right_endpoint(λ)
         if x == Inf
             break
         end
 
-        println("Continutiy diff: ", λ.p(x) - λ.next.p(x))
+        TEST_PRINT_LEVEL > 0 && println("Continutiy diff: ", λ.p(x) - λ.next.p(x))
         @test λ.p(x) ≈ λ.next.p(x)
     end
 
@@ -86,40 +54,77 @@ function verify_piecewise_quadratic(c_mat, show_plot=false)
     y_pwq = dev.evalPwq(pwq, x_grid)
 
     for p in poly_list
-        @printf("suboptimality diff: %2.3f\n", maximum(y_pwq - p.(x_grid)))
+        TEST_PRINT_LEVEL > 0 && @printf("suboptimality diff: %2.3f\n", maximum(y_pwq - p.(x_grid)))
         #println("   ",  x_grid[ (y_pwq - p.(x_grid)) .> 0])
         @test (y_pwq .<= p.(x_grid)) == trues(length(x_grid))
     end
 
 end
 
-#---
-c_mat1 = [
-2.53106  1.59097   1.60448
-2.51349  0.681205  1.60553
-2.09364  0.714858  1.08607
-]
-verify_piecewise_quadratic(c_mat1)
+pwq = dev.generate_PiecewiseQuadratic(([2.0, 2, 1], -Inf), ([2.0, -2, 1], 0.0))
 
-#---
-c_mat2 = [
-2.01532  1.59269   1.65765
-2.50071  1.56421   1.53899
-2.02767  0.706143  1.129
-]
-verify_piecewise_quadratic(c_mat2)
+@testset "Piecewise Quadratics" begin
+    @test length(pwq) == 2
+    dev.add_quadratic(pwq, dev.QuadraticPolynomial([1, 0, 1.0]))
 
-#---
+    @test length(pwq) == 3
 
-c_mat3 = [
-2.42298  0.796953  1.02011
-2.45055  1.32235   1.4894
-2.1762   0.855014  1.0647
-]
-verify_piecewise_quadratic(c_mat3)
-#---
-# Random test case
-N = 10
-c_mat_rand = [2+rand(N) 2*rand(N) 1+rand(N)]
+    #---
+    # Tests with (2x^2 + 1) and (x^2 + 2) which have intersections in -1, +1
+    # and 5/2*x(x-1) + 1 = 2.5x^2 - 2.5x + 1
 
-verify_piecewise_quadratic(c_mat_rand)
+    p1 = dev.QuadraticPolynomial([2.0, 0, 1])
+    p2 = dev.QuadraticPolynomial([1.0, 0, 2])
+    p3 = dev.QuadraticPolynomial(2.5, -2.5, 1.0)
+
+    pwq1 = dev.create_new_pwq(p1)
+    dev.add_quadratic(pwq1, p2)
+    @test length(pwq1) == 3
+    dev.add_quadratic(pwq1, p3)
+    @test length(pwq1) == 4
+
+    pwq2 = dev.create_new_pwq(p2)
+    dev.add_quadratic(pwq2, p3)
+    @test length(pwq2) == 3
+    dev.add_quadratic(pwq2, p1)
+    @test length(pwq2) == 4
+
+    @test pwq1[1].p === pwq2[1].p == p1
+    @test pwq1[2].left_endpoint == pwq2[2].left_endpoint == -1
+    @test pwq1[2].p === pwq2[2].p == p2
+    @test pwq1[3].left_endpoint == pwq2[3].left_endpoint == 0
+    @test pwq1[3].p === pwq2[3].p
+
+
+    #---
+    c_mat1 = [
+    2.53106  1.59097   1.60448
+    2.51349  0.681205  1.60553
+    2.09364  0.714858  1.08607
+    ]
+    verify_piecewise_quadratic(c_mat1)
+
+    #---
+    c_mat2 = [
+    2.01532  1.59269   1.65765
+    2.50071  1.56421   1.53899
+    2.02767  0.706143  1.129
+    ]
+    verify_piecewise_quadratic(c_mat2)
+
+    #---
+
+    c_mat3 = [
+    2.42298  0.796953  1.02011
+    2.45055  1.32235   1.4894
+    2.1762   0.855014  1.0647
+    ]
+    verify_piecewise_quadratic(c_mat3)
+    #---
+    # Random test case
+    N = 10
+    c_mat_rand = [2+rand(N) 2*rand(N) 1+rand(N)]
+
+    verify_piecewise_quadratic(c_mat_rand)
+
+end
