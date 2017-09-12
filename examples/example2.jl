@@ -40,14 +40,7 @@ Y2, _ = dev.find_optimal_y_values(ℓ, I2)
 
 plot(layout=(1,2))
 ##
-l = zeros(size(Λ))
-for i=1:size(l,1)
-    for j=1:size(l,2)
-        if isassigned(Λ,i,j)
-            l[i,j] = length(Λ[i, j])
-        end
-    end
-end
+l = [(isassigned(Λ,i,j) ? length(Λ[i,j]) : 0) for i = 1:size(Λ,1), j = 1:size(Λ,2)]
 sum(l)
 ##
 

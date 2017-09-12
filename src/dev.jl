@@ -265,8 +265,9 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
 
 
     ρ = QuadraticPolynomial{T}()
+    upper_bound_inner = Inf
     for m=2:M
-        for i=N-m:-1:1
+        for i=1:N-m
             Λ_new = create_new_pwq()
             for ip=i+1:N-m+1
 
@@ -276,8 +277,8 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
                     #counter1 += 1
 
                     minimize_wrt_x2(ℓ[i,ip], p, ρ)
-
-                    if unsafe_minimum(ρ) > upper_bound
+                    ρmin = unsafe_minimum(ρ)
+                    if ρmin > upper_bound || ρmin > upper_bound_inner
                         continue
                     end
 
@@ -292,6 +293,9 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
                 end
             end
             Λ[m, i] = Λ_new
+            if i == 1
+                _, _, upper_bound_inner = find_minimum(Λ[m,1])
+            end
         end
     end
     return Λ
