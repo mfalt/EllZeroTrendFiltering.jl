@@ -30,7 +30,10 @@ function Base.show(io::IO, p::QuadraticPolynomial)
     @printf(io, "%.2f*x^2 + %.2f*x + %.2f   ", p.a, p.b, p.c)
 end
 
-
+function Base.zero{T}(::Type{QuadraticPolynomial{T}})
+    return QuadraticPolynomial(zero(T), zero(T), zero(T))
+end
+Base.zero{T<:QuadraticPolynomial}(S::T) = zero(T)
 
 
 -(p1::QuadraticPolynomial, p2::QuadraticPolynomial) = QuadraticPolynomial(p1.a-p2.a, p1.b-p2.b, p1.c-p2.c)

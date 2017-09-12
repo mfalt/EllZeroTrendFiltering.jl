@@ -5,13 +5,7 @@ import Base.-
 import Base.+
 import Base.show
 import Base.Operators
-import Base.start
-import Base.next
-import Base.done
-import Base.length
-import Base.getindex
-
-import Base.==
+import Base: start, next, done, length, zero, getindex, ==
 
 import IterTools
 using StaticArrays
@@ -22,6 +16,8 @@ include("types/QuadraticPolynomial.jl")
 include("types/PiecewiseQuadratic.jl")
 include("types/QuadraticForm2.jl")
 
+include("transition_cost_computation.jl")
+
 global const DEBUG = false
 global const DEBUG2 = false
 global const COUNTER_TEST = false
@@ -31,7 +27,6 @@ global const COUNTER_TEST = false
 Inserts a quadratic polynomial ρ into the linked list Λ which represents a piecewise quadratic polynomial
 """
 function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
-
 
     DEBUG && println("Inserting: ", ρ)
     if Λ.next.left_endpoint == Inf # I.e. the piecewise quadratic object is empty, perhaps better to add dummy polynomial
@@ -251,7 +246,7 @@ global counter2
 """
 Find optimal fit
 """
-function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{QuadraticForm2{T},2}, M::Int, upper_bound=Inf)
+function find_optimal_fit{T}(ℓ::Array{QuadraticForm2{T},2}, V_0N::QuadraticPolynomial{T}, M::Int, upper_bound=Inf)
     #global counter1
     #global counter2
     #counter1 = 0
@@ -261,8 +256,11 @@ function find_optimal_fit{T}(Λ_0::Array{PiecewiseQuadratic{T},1}, ℓ::Array{Qu
 
     Λ = Array{PiecewiseQuadratic{T}}(M, N)
 
-    Λ[1, 1:end-1] .= Λ_0
-
+    for i=1:N-1
+        p = dev.minimize_wrt_x2(ℓ[i, N], V_0N)
+        p.time_index = N
+        Λ[1, i] .= dev.create_new_pwq(p)
+    end
 
     ρ = QuadraticPolynomial{T}()
     for m=2:M
@@ -345,7 +343,7 @@ function regularize{T}(Λ_0::PiecewiseQuadratic{T}, ℓ::Array{QuadraticForm2{T}
 end
 
 
-function recover_solution{T}(Λ::PiecewiseQuadratic{T}, first_index=1, last_index=-1)
+function recover_optimal_index_set{T}(Λ::PiecewiseQuadratic{T}, first_index=1, last_index=-1)
 
     p, y, f = find_minimum(Λ)
 
@@ -368,109 +366,47 @@ function recover_solution{T}(Λ::PiecewiseQuadratic{T}, first_index=1, last_inde
     return I, y, f
 end
 
-
-
-# TODO Maybe use big T for time indices, howabout mathcal{T}
 """
-Computes the transition costs ℓ given a
-polynomial and a sequence t
+Y, f = find_optimal_y_values(ℓ, V_0N, I)
+Given transition costs `ℓ`, cost of right endpoint `V_0N`, and breakpoint indicies `I`
+the optimal y-values `Y` and the optimal cost `f` are computed.
 """
-function compute_transition_costs(g, t::AbstractArray)
-    T = Float64
-    # Find primitive functions to g, t*g, and g^2
-    # and evaluate them at the break points
-    #I_g = polyint(g).(t)
-    #I_g2 = polyint(g^2).(t)
-    #I_tg = polyint(Poly([0,1]) * g).(t)
 
-    N = length(t)
+function find_optimal_y_values(ℓ, V_0N::QuadraticPolynomial, I)
+    m = length(I) - 1
 
-    # Find primitive functions to g, t*g, and g^2 at the break points
-    I_g = zeros(size(t))
-    I_g2 = zeros(size(t))
-    I_tg = zeros(size(t))
+    P = zeros(m+1, m+1)
+    q = zeros(m+1)
 
-    for i=2:N
-        const tol = 1e-3
-        I_g[i] = I_g[i-1] + quadgk(g, t[i-1], t[i], reltol=tol)[1]
-        I_g2[i] = I_g2[i-1] + quadgk(t -> g(t)^2, t[i-1], t[i], reltol=tol)[1]
-        I_tg[i] = I_tg[i-1] + quadgk(t -> t*g(t), t[i-1], t[i], reltol=tol)[1]
+    # Add cost for the right endpoint
+    P[m+1, m+1] = V_0N.a
+    q[m+1] = V_0N.b
+    r = V_0N.c
+
+    # Form quadratic cost function Y'*P*Y + q'*Y + r
+    # corresponding to the y-values in the vector Y
+    for j=1:m
+        P[j:j+1,j:j+1] .+= ℓ[I[j], I[j+1]].P
+        q[j:j+1] .+= ℓ[I[j], I[j+1]].q
+        r += ℓ[I[j], I[j+1]].r
     end
 
-    ℓ = Array{QuadraticForm2{T}}(N-1,N)
-
-    for i=1:N-1
-        for ip=i+1:N
-
-            P = (t[ip] - t[i]) * @SMatrix [1/3 1/6; 1/6 1/3]
-
-            q = -2* 1/(t[ip]-t[i]) *
-            @SVector [-(I_tg[ip] - I_tg[i]) + t[ip]*(I_g[ip] - I_g[i]),
-            (I_tg[ip] - I_tg[i]) - t[i]*(I_g[ip] - I_g[i])]
-
-            r =  I_g2[ip] - I_g2[i]
-
-            ℓ[i,ip] = QuadraticForm2(P, q, r)
-        end
-    end
-
-    return ℓ
+    # find the optimal Y-vector, and compute the correspinding error
+    Y = -(P \ q) / 2
+    f = Y' * P * Y + q' * Y + r
+    return Y, f
 end
 
+"""
+    I, Y, f = recover_solution(Λ::PiecewiseQuadratic{T}, ℓ, V_0N::QuadraticPolynomial, first_index=1)
 
+"""
+function recover_solution(Λ::PiecewiseQuadratic, ℓ, V_0N::QuadraticPolynomial, first_index=1)
+    I, _, _ = recover_optimal_index_set(Λ, first_index)
+    Y, f = find_optimal_y_values(ℓ, V_0N::QuadraticPolynomial, I)
 
-# Med samma P-matriser?
-function compute_discrete_transition_costs(g)
-    T = Float64
-
-    N = length(g)
-
-    # Find sums of g, k*g, and g^2
-    G1 = zeros(T, N)
-    G2 = zeros(T, N)
-    G3 = zeros(T, N)
-
-    # The sums corresponding to transitioning from i to ip
-    # i.e. not including the cost at ip
-    for k=2:N
-        G1[k] = G1[k-1] + g[k-1]
-        G2[k] = G2[k-1] + (k-1)*g[k-1]
-        G3[k] = G3[k-1] + g[k-1]^2
-    end
-
-    # The P-matrices only depend on the distance d=ip-i
-    P_mats  = Vector{SMatrix{2,2,Float64,4}}(N-1)
-    P_mats[1] = @SMatrix [1.0 0; 0 0]
-    for d=2:N-1
-        off_diag_elems = sum([k*(d - k) for k=0:d-1])
-        P_mats[d] = @SMatrix [P_mats[d-1][1,1] + d^2    off_diag_elems;
-        off_diag_elems            P_mats[d-1][1,1]]
-    end
-
-    P_mats = P_mats ./ (1.0:N-1).^2 # FIXME: Why can't this be done above in the loop?
-
-    #P_invs = inv.(P_mats)
-
-    ℓ = Array{QuadraticForm2{T}}(N-1,N)
-
-    for i=1:N-1
-        for ip=i+1:N
-
-            P = P_mats[ip-i]
-
-            q = -2* 1/(ip-i) *
-            @SVector [-(G2[ip] - G2[i]) + ip*(G1[ip] - G1[i]),
-            (G2[ip] - G2[i]) - i*(G1[ip] - G1[i])]
-
-            r =  G3[ip] - G3[i]
-
-            ℓ[i,ip] = QuadraticForm2(P, q, r)
-        end
-    end
-
-    return ℓ
+    return I, Y, f
 end
-
 
 """
 Evaluate the optimal cost (using least squares) for all
@@ -512,24 +448,7 @@ function brute_force_optimization(ℓ, K)
     return I_best, Y_best, cost_best
 end
 
-function find_optimal_y_values(ℓ, I)
-    P = zeros(length(I), length(I))
-    q = zeros(length(I))
-    r = 0
 
-    # Form quadratic cost function Y'*P*Y + q'*Y + r
-    # corresponding to the y-values in the vector Y
-    for j=1:length(I)-1
-        P[j:j+1,j:j+1] .+= ℓ[I[j], I[j+1]].P
-        q[j:j+1] .+= ℓ[I[j], I[j+1]].q
-        r += ℓ[I[j], I[j+1]].r
-    end
-
-    # find the optimal Y-vector, and compute the correspinding error
-    Y = -(P \ q) / 2
-    f = Y' * P * Y + q' * Y + r
-    return Y, f
-end
 
 
 # end of module

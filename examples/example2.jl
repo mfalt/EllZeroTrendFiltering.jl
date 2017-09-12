@@ -1,6 +1,9 @@
 using IterTools
 using Plots
 
+# The problem Σerror^2 + card(I)
+# Heuristic
+
 include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 ##
 
@@ -16,23 +19,25 @@ N = length(data)
 #@time I, Y, f = dev.brute_force_optimization(ℓ, K-1);
 
 cost_last = dev.QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
-Λ_0 = [dev.create_new_pwq(dev.minimize_wrt_x2(ℓ[i, N], cost_last)) for i in 1:N-1];
+
 start_time = time()
 gc()
-@time Λ = dev.find_optimal_fit(Λ_0, ℓ, 10, Inf);
+@time Λ = dev.find_optimal_fit(ℓ, cost_last, 10, 1.65);
 println("Time: ", time()-start_time)
 
 #println(dev.counter1, " ", dev.counter2)
 
 for k=3:10
-    println(k, " : ", dev.recover_solution(Λ[k, 1], 1, N)[3])
+    println(k, " : ", dev.recover_optimal_index_set(Λ[k, 1], 1, N)[3])
 end
 ###
 
-@time I2, y2, f2 = dev.recover_solution(Λ[7, 1], 1, N)
+@time I2, y2, f2 = dev.recover_optimal_index_set(Λ[7, 1], 1, N)
 println(I2)
-Y2, _ = dev.find_optimal_y_values(ℓ, I2)
+Y2, f2_2 = dev.find_optimal_y_values(ℓ, cost_last, I2)
 
+
+I2, Y2, f3 = dev.recover_solution(Λ[7, 1], ℓ, cost_last, )
 #println("Comparison: ", sqrt(f), " --- ", sqrt(f2))
 
 
