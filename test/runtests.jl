@@ -10,4 +10,5 @@ include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
     include("transition_costs.jl")
     include("discrete_transition_costs.jl")
     include("find_optimal_fit.jl")
+    include("test_discrete_fit.jl")
 end

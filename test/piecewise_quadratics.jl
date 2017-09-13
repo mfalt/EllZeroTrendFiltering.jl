@@ -3,6 +3,8 @@ using Base.Test
 include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 
 global const TEST_PRINT_LEVEL = 0
+
+srand(27182)
 #---
 
 # Given a matrix with coefficients for quadratic polynomials this function

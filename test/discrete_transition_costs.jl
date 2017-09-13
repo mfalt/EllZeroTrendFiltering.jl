@@ -2,7 +2,7 @@ using Base.Test
 using Interpolations
 include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 
-
+srand(31415)
 ## Test 1
 # Compare the approximation costs computed using ℓ which is obtained from
 # compute_discrete_transition_costs and computed via simple linear interpolation
