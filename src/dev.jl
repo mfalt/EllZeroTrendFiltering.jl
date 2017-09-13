@@ -246,7 +246,7 @@ global counter2
 """
 Find optimal fit
 """
-function find_optimal_fit{T}(ℓ::Array{QuadraticForm2{T},2}, V_0N::QuadraticPolynomial{T}, M::Int, upper_bound=Inf)
+function find_optimal_fit{T}(ℓ::Array{QuadraticForm2{T},2}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf)
     #global counter1
     #global counter2
     #counter1 = 0

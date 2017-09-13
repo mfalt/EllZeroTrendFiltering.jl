@@ -7,14 +7,14 @@ t = linspace(0,4π,N)
 g = sin
 
 @time ℓ = dev.compute_transition_costs(g, t);
+cost_last = dev.QuadraticPolynomial(0.0, 0.0, 0.0)
+#Λ_0 = [dev.create_new_pwq(dev.minimize_wrt_x2(ℓ[i, N], ) for i in 1:N-1];
 
-Λ_0 = [dev.create_new_pwq(dev.minimize_wrt_x2(ℓ[i, N], dev.QuadraticPolynomial(0.0, 0.0, 0.0))) for i in 1:N-1];
+@time Λ = dev.find_optimal_fit(ℓ, cost_last, 7);
 
-@time Λ = dev.find_optimal_fit(Λ_0, ℓ, 7);
-
-@time I_dp3, _, f_dp3 = dev.recover_solution(Λ[3, 1], 1, N)
-@time I_dp4, _, f_dp4 = dev.recover_solution(Λ[4, 1], 1, N)
-@time I_dp5, _, f_dp5 = dev.recover_solution(Λ[5, 1], 1, N)
+@time I_dp3, _, f_dp3 = dev.recover_solution(Λ[3, 1], ℓ, cost_last)
+@time I_dp4, _, f_dp4 = dev.recover_solution(Λ[4, 1], ℓ, cost_last)
+@time I_dp5, _, f_dp5 = dev.recover_solution(Λ[5, 1], ℓ, cost_last)
 
 @testset "Optimal Fit" begin
     # Comparisons to solutions found by brute force optimization
