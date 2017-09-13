@@ -414,9 +414,9 @@ end
 
 """
 Evaluate the optimal cost (using least squares) for all
-possible index sets with K elements
+possible index sets with M segemets
 """
-function brute_force_optimization(ℓ, K)
+function brute_force_optimization(ℓ, V_0N::QuadraticPolynomial, M)
     cost_best = Inf
 
     I_best = []
@@ -424,16 +424,20 @@ function brute_force_optimization(ℓ, K)
 
     N = size(ℓ, 2)
 
-    for I=IterTools.subsets(2:N-1, K)
+    for I=IterTools.subsets(2:N-1, M-1)
 
         I = [1; I; N]
-        P = zeros(K+2, K+2)
-        q = zeros(K+2)
+        P = zeros(M+1, M+1)
+        q = zeros(M+1)
         r = 0
 
+        # Add cost at right endpoint 
+        P[end,end] = V_0N.a
+        q[end]     = V_0N.b
+        r          = V_0N.c
         # Form quadratic cost function Y'*P*Y + q'*Y + r
         # corresponding to the y-values in the vector Y
-        for j=1:K+1
+        for j=1:M
             P[j:j+1,j:j+1] .+= ℓ[I[j], I[j+1]].P
             q[j:j+1] .+= ℓ[I[j], I[j+1]].q
             r += ℓ[I[j], I[j+1]].r
