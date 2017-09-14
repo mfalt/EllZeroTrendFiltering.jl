@@ -1,9 +1,12 @@
-# Note that the first element of the list should be interpreted as the list head
-# Should perhaps be reconsidered
-#
-# Also note that left and right endpoints are represented with ±1e9,
-# in order to allow comparison of polynomials far to the left/right,
-# Could also just look at the sign of Δ.a
+"""
+    PiecewiseQuadratic{T}
+
+Represents a piecewise-quadratic as a linked list of QuadraticPolynomial{T} and left endpoints.
+
+Note that the first element of the list is sometimes assumed to be a list head with `NaN` polynomial and `left_endpoint=NaN`.
+
+The list/element `x` is the last element in the list when `x.next === x` or `x.next.left_endpoint==Inf`.
+"""
 mutable struct PiecewiseQuadratic{T}
 p::QuadraticPolynomial{T}
 left_endpoint::Float64
@@ -23,6 +26,7 @@ function PiecewiseQuadratic{T}(p::QuadraticPolynomial{T}, left_endpoint, next::P
     PiecewiseQuadratic{T}(p, left_endpoint, next)
 end
 
+islast(λ::PiecewiseQuadratic) = λ.next.left_endpoint == Inf
 
 """
 Creates empty piecewise-quadratic polynomial consisting only of the list head
@@ -52,20 +56,23 @@ function _generate_PiecewiseQuadratic_helper(arg, args...)
     return PiecewiseQuadratic(QuadraticPolynomial(arg[1]), arg[2],  _generate_PiecewiseQuadratic_helper(args...))
 end
 
-
-start{T}(pwq::PiecewiseQuadratic{T}) = pwq.next
+#If head has NaN left_endpoint, assume empty dummy head
+start{T}(pwq::PiecewiseQuadratic{T}) = isnan(pwq.left_endpoint) ? pwq.next : pwq
 done{T}(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) = (iterstate.left_endpoint == Inf)
 next{T}(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) = (iterstate, iterstate.next)
 
 
 # For trouble-shooting etc.
-function getindex(Λ::dev.PiecewiseQuadratic, n::Int64)
+function getindex(Λ::dev.PiecewiseQuadratic, n::Integer)
     if n <= 0
-        error("Attempted to access index <= 0 in piecewise quadratic.")
+        throw(BoundsError(Λ, n))
     end
-
-    λ = Λ.next
+    # If first element has NaN left_endpoint, assume it to be empty list-head
+    λ = isnan(Λ.left_endpoint) ? Λ.next : Λ
     for k=1:n-1
+        if islast(λ)
+            throw(BoundsError(Λ, n))
+        end
         λ = λ.next
     end
     return λ
@@ -81,26 +88,26 @@ end
 # pwq after the deletion
 #OBS This function is unsafe if pwq.next does not exist
 function delete_next{T}(pwq::PiecewiseQuadratic{T})
-    pwq.next = unsafe_get(pwq.next).next
+    pwq.next = pwq.next.next
     return pwq.next
 end
 
 function get_right_endpoint(λ::PiecewiseQuadratic)
-    return unsafe_get(λ.next).left_endpoint
+    return λ.next.left_endpoint
 end
 
 
 function length(pwq::PiecewiseQuadratic)
     n = 0
-    for x in pwq # Skip the dummy head element
+    for x in pwq
         n += 1
     end
     return n
 end
 
 
-function show(io::IO, Λ::PiecewiseQuadratic)
-    #@printf("PiecewiseQuadratic (%i elems):\n", length(Λ))
+function show{T}(io::IO, Λ::PiecewiseQuadratic{T})
+    print(io, "PiecewiseQuadratic{$T} with $(length(Λ)) elements:\n")
 
     for λ in Λ
         if λ.left_endpoint == -Inf
@@ -132,6 +139,17 @@ function evalPwq(Λ::PiecewiseQuadratic, x)
     return y
 end
 
+"""
+    x, y, x_all, y_all = get_vals(Λ::PiecewiseQuadratic)
+Evaluate `Λ` so that `y .= Λ.(x)` for a set of gridpoints `x`.
+Also returns lists x_all, y_all so that `y_all[i] .= Λ[i].(x_all[i])`
+where `Λ[i]` is the `i`th segment of the piecewise quadratic.
+
+The gridpoints in x_all[i] cointains points in the interval `[xmin[i]-1,xmax[i]+1]` where
+`xmin[i],xmax[i]` are the extrema of the interval for which `Λ[i]` defines `Λ`.
+
+The gridpoints at the ends default to `xmin[1] := xmax[1] - 1` and `xmax[end] := xmin[end] + 1`.
+"""
 function get_vals(Λ::PiecewiseQuadratic)
     x = Float64[]
     y = Float64[]
@@ -141,12 +159,12 @@ function get_vals(Λ::PiecewiseQuadratic)
         left_endpoint = λ.left_endpoint
         right_endpoint = get_right_endpoint(λ)
 
-        if left_endpoint != -1e9 || right_endpoint != 1e9
-            if left_endpoint == -1e9
+        if left_endpoint != -Inf || right_endpoint != Inf
+            if left_endpoint == -Inf
                 left_endpoint = right_endpoint - 2.0
             end
 
-            if right_endpoint == 1e9
+            if right_endpoint == Inf
                 right_endpoint = left_endpoint + 2.0
             end
         else
@@ -177,6 +195,12 @@ function plot_pwq(Λ::PiecewiseQuadratic)
     return p
 end
 
+"""
+    p_opt, x_opt, f_opt = find_minimum(Λ::PiecewiseQuadratic)
+
+Find the point `x_opt = argmin Λ(x)` and return `f_opt = Λ(x_opt)` and the quadratic
+function `p_opt` which defines `Λ` around the point `x_opt`.
+"""
 function find_minimum(Λ::PiecewiseQuadratic)
     # May assume that the minimum is at the staionary point of the polynomial
     # TODO: True?
@@ -195,12 +219,3 @@ function find_minimum(Λ::PiecewiseQuadratic)
     end
     return p_opt, x_opt, f_opt
 end
-
-
-
-
-
-"""
-min!(q1::PiecewiseQuadratic{T}, q2::QuadraticOnInterval{T})
-Update `q1(x)` on the interval `I` in `q2` to be `q1(x) := min(q1(x),q2(x)) ∀ x∈I`
-"""

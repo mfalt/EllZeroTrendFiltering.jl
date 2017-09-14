@@ -26,7 +26,7 @@ function verify_piecewise_quadratic(c_mat, show_plot=false)
     pwq = dev.create_new_pwq()
     for p in poly_list
         TEST_PRINT_LEVEL > 0 && println("Inserting: ", p)
-        dev.add_quadratic(pwq, p)
+        dev.add_quadratic!(pwq, p)
 
         TEST_PRINT_LEVEL > 0 && println("After Insertion: ")
         TEST_PRINT_LEVEL > 0 && println(pwq)
@@ -67,7 +67,12 @@ pwq = dev.generate_PiecewiseQuadratic(([2.0, 2, 1], -Inf), ([2.0, -2, 1], 0.0))
 
 @testset "Piecewise Quadratics" begin
     @test length(pwq) == 2
-    dev.add_quadratic(pwq, dev.QuadraticPolynomial([1, 0, 1.0]))
+    dev.add_quadratic!(pwq, dev.QuadraticPolynomial([1, 0, 1.0]))
+
+    #Test print string
+    str = "PiecewiseQuadratic{Float64} with 3 elements:\n[  -∞ , -0.50]\t  :   1.00*x^2 + 2.00*x + 2.00   \n[-0.50, 0.50]\t  :   1.00*x^2 + 0.00*x + 1.00   \n[0.50, ∞  ]\t  :   1.00*x^2 + -2.00*x + 2.00   \n"
+    str2 = sprint(print, pwq)
+    @test str == str2
 
     @test length(pwq) == 3
 
@@ -80,15 +85,15 @@ pwq = dev.generate_PiecewiseQuadratic(([2.0, 2, 1], -Inf), ([2.0, -2, 1], 0.0))
     p3 = dev.QuadraticPolynomial(2.5, -2.5, 1.0)
 
     pwq1 = dev.create_new_pwq(p1)
-    dev.add_quadratic(pwq1, p2)
+    dev.add_quadratic!(pwq1, p2)
     @test length(pwq1) == 3
-    dev.add_quadratic(pwq1, p3)
+    dev.add_quadratic!(pwq1, p3)
     @test length(pwq1) == 4
 
     pwq2 = dev.create_new_pwq(p2)
-    dev.add_quadratic(pwq2, p3)
+    dev.add_quadratic!(pwq2, p3)
     @test length(pwq2) == 3
-    dev.add_quadratic(pwq2, p1)
+    dev.add_quadratic!(pwq2, p1)
     @test length(pwq2) == 4
 
     @test pwq1[1].p === pwq2[1].p == p1

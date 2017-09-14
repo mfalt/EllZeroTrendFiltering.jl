@@ -1,8 +1,9 @@
 
 # TODO Maybe use big T for time indices, howabout mathcal{T}
 """
-Computes the transition costs ℓ given a
-polynomial and a sequence t
+    ℓ = compute_transition_costs(g, t::AbstractArray)
+Computes the transition costs `ℓ` given a
+function `g` and a time sequence `t`
 """
 function compute_transition_costs(g, t::AbstractArray)
     T = Float64
@@ -26,7 +27,7 @@ function compute_transition_costs(g, t::AbstractArray)
         I_tg[i] = I_tg[i-1] + quadgk(t -> t*g(t), t[i-1], t[i], reltol=tol)[1]
     end
 
-    ℓ = Array{QuadraticForm2{T}}(N-1,N)
+    ℓ = Array{QuadraticForm{T}}(N-1,N)
 
     for i=1:N-1
         for ip=i+1:N
@@ -39,7 +40,7 @@ function compute_transition_costs(g, t::AbstractArray)
 
             r =  I_g2[ip] - I_g2[i]
 
-            ℓ[i,ip] = QuadraticForm2(P, q, r)
+            ℓ[i,ip] = QuadraticForm(P, q, r)
         end
     end
 
@@ -49,8 +50,12 @@ end
 
 
 
-# Med samma P-matriser?
-function compute_discrete_transition_costs(g)
+"""
+    ℓ = compute_transition_costs(g::AbstractArray)
+Computes the transition costs `ℓ` given a discrete
+function `g`.
+"""
+function compute_discrete_transition_costs(g::AbstractArray)
     T = Float64
 
     N = length(g)
@@ -81,7 +86,7 @@ function compute_discrete_transition_costs(g)
 
     #P_invs = inv.(P_mats)
 
-    ℓ = Array{QuadraticForm2{T}}(N-1,N)
+    ℓ = Array{QuadraticForm{T}}(N-1,N)
 
     for i=1:N-1
         for ip=i+1:N
@@ -94,7 +99,7 @@ function compute_discrete_transition_costs(g)
 
             r =  G3[ip] - G3[i]
 
-            ℓ[i,ip] = QuadraticForm2(P, q, r)
+            ℓ[i,ip] = QuadraticForm(P, q, r)
         end
     end
 

@@ -14,7 +14,7 @@ using QuadGK
 
 include("types/QuadraticPolynomial.jl")
 include("types/PiecewiseQuadratic.jl")
-include("types/QuadraticForm2.jl")
+include("types/QuadraticForm.jl")
 
 include("transition_cost_computation.jl")
 
@@ -24,9 +24,12 @@ global const COUNTER_TEST = false
 
 # TODO come up with better symbol for ρ
 """
-Inserts a quadratic polynomial ρ into the linked list Λ which represents a piecewise quadratic polynomial
+    add_quadratic!(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}) where {T}
+Inserts a quadratic polynomial ρ into the linked list `Λ`, which represents a piecewise
+quadratic polynomial, so that the new `Λ` satisfies
+`Λ(y) := min{ Λ(y) ,ρ(y) } ∀ y`
 """
-function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
+function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
 
     DEBUG && println("Inserting: ", ρ)
     if Λ.next.left_endpoint == Inf # I.e. the piecewise quadratic object is empty, perhaps better to add dummy polynomial
@@ -52,9 +55,9 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
 
         b2_minus_4ac =  Δb^2 - 4*Δa*Δc
 
-        if Δa > 0 # ρ has greater curvature, i.e., ρ is smallest in the middle
+        if Δa > 0 # ρ has greater curvature, i.e., ρ is smallest in the middle if intersect
             if b2_minus_4ac <= 0
-                # No intersections, old quadratic is smallest, just step forward
+                # Zero (or one) intersections, old quadratic is smallest, just step forward
                 DEBUG && println("No intersections, old quadratic is smallest, Δa > 0, breaking.")
                 break
             else
@@ -96,6 +99,7 @@ function add_quadratic{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
 
         elseif Δa < 0 # ρ has lower curvature, i.e., ρ is smallest on the sides
             if b2_minus_4ac <= 0
+                # Zero (or one) roots
                 λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
             else
                 # Compute the intersections
@@ -209,10 +213,15 @@ end
     return second_old_pwq_segment, second_old_pwq_segment.next
 end
 
-# Takes a quadratic form in [x1; x2] and a polynomial in x2
-# and returns the minimum of the sum wrt to x2,
-# i.e. a polynomial of x1
-@inline function minimize_wrt_x2{T}(qf::QuadraticForm2{T},p::QuadraticPolynomial{T},ρ=QuadraticPolynomial{T}())
+"""
+    ρ = minimize_wrt_x2(qf::QuadraticForm{T}, p::QuadraticPolynomial{T}, ρ=QuadraticPolynomial{T}()) where {T}
+Takes a quadratic form in `[x₁; x₂]` and a polynomial in `x₂`
+and returns the minimum of the sum wrt to `x₂`,
+i.e. ρ(x₁) = min_x₂{ qf(x₁,x₂) +  p(x₂) }`
+
+The input `ρ` can be pre-allocated on input and will then be changed.
+"""
+@inline function minimize_wrt_x2{T}(qf::QuadraticForm{T}, p::QuadraticPolynomial{T}, ρ=QuadraticPolynomial{T}())
     P = qf.P
     q = qf.q
     r = qf.r
@@ -244,9 +253,16 @@ global counter1
 global counter2
 
 """
-Find optimal fit
+    Λ = find_optimal_fit(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf) where {T}
+
+Given the transition costs `ℓ[i,j](y_i,y_j)` and the cost at the endpoint `V_0N(y_N)` find all solutions `f` with up to `M` segments for the problem
+
+V_i^m = minimize_f^M [ Σ_{k=1}^i { ℓ[k,k+1](f(k),f(k+1)) } + V_0N(f(N)) ]
+        s.t          f(k) being continuous piecewise linear with `m` segements.
+
+i.e. `Λ[m,i]` contains the best (in `ℓ` cost) continuous piecewise linear function `f` with up to `M` segments over the interval `i` to `N`
 """
-function find_optimal_fit{T}(ℓ::Array{QuadraticForm2{T},2}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf)
+function find_optimal_fit{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf)
     #global counter1
     #global counter2
     #counter1 = 0
@@ -280,7 +296,7 @@ function find_optimal_fit{T}(ℓ::Array{QuadraticForm2{T},2}, V_0N::QuadraticPol
                         continue
                     end
 
-                    add_quadratic(Λ_new, ρ)
+                    add_quadratic!(Λ_new, ρ)
 
                     if ρ.has_been_used == true
                         ρ.time_index = ip
@@ -306,7 +322,7 @@ end
 """
 Find optimal fit
 """
-function regularize{T}(Λ_0::PiecewiseQuadratic{T}, ℓ::Array{QuadraticForm2{T},2}, reg_param::T, upper_bound=Inf)
+function regularize{T}(Λ_0::PiecewiseQuadratic{T}, ℓ::Array{QuadraticForm{T},2}, reg_param::T, upper_bound=Inf)
     N = size(ℓ, 2)
 
     Λ = Vector{PiecewiseQuadratic{T}}(N)
@@ -330,7 +346,7 @@ function regularize{T}(Λ_0::PiecewiseQuadratic{T}, ℓ::Array{QuadraticForm2{T}
                     continue
                 end
 
-                add_quadratic(Λ_new, ρ)
+                add_quadratic!(Λ_new, ρ)
 
                 if ρ.has_been_used == true
                     ρ.time_index = ip
@@ -431,7 +447,7 @@ function brute_force_optimization(ℓ, V_0N::QuadraticPolynomial, M)
         q = zeros(M+1)
         r = 0
 
-        # Add cost at right endpoint 
+        # Add cost at right endpoint
         P[end,end] = V_0N.a
         q[end]     = V_0N.b
         r          = V_0N.c
