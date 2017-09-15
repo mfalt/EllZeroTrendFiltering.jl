@@ -30,3 +30,24 @@ f_costs = [5.328255648628215, 4.8783936257642315, 1.7402065022125042, 0.91968804
     @time I_bf, _, f_bf = dev.brute_force_optimization(ℓ, cost_last, m);
     @test I_bf ∈  I_sols[m]
 end
+
+
+##
+
+
+@testset "Regularize ζ=$ζ" for ζ in 0.1:0.1:2
+
+    Λ_reg = dev.regularize(ℓ, cost_last, ζ)
+
+    # recover_optimal_index_set returns the cost inclusive the regularization penality,
+    # revober optimal solution does not do so. It is arguably more interesting
+    # to test cost including regularization.
+    I, _, f_reg = dev.recover_optimal_index_set(Λ_reg[1])
+
+    # Use the costs above to find out how many segments the solution should contain
+    m_expected = indmin([f_costs[m] + m*ζ for m=1:5])
+
+    @test m_expected == length(I) - 1
+    @test I ∈ I_sols[m_expected]
+    @test f_reg ≈ f_costs[m_expected] + ζ*m_expected
+end

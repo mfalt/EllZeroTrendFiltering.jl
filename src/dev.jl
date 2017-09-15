@@ -320,14 +320,18 @@ end
 
 
 """
-Find optimal fit
+Solves the regularization problem
+minimzie ∫ (g - y)^2 dt + ζ⋅card(d^2/dt^2 y)
 """
-function regularize{T}(Λ_0::PiecewiseQuadratic{T}, ℓ::Array{QuadraticForm{T},2}, reg_param::T, upper_bound=Inf)
+function regularize{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPolynomial{T}, ζ::T, upper_bound=Inf)
     N = size(ℓ, 2)
 
     Λ = Vector{PiecewiseQuadratic{T}}(N)
 
-    Λ[N] = Λ_0
+    V_0N = deepcopy(V_0N)
+    V_0N.time_index = -1
+    Λ[N] = create_new_pwq(V_0N)
+
 
     ρ = QuadraticPolynomial{T}()
 
@@ -340,7 +344,7 @@ function regularize{T}(Λ_0::PiecewiseQuadratic{T}, ℓ::Array{QuadraticForm{T},
                 #counter1 += 1
 
                 minimize_wrt_x2(ℓ[i,ip], p, ρ)
-                ρ.c += reg_param
+                ρ.c += ζ
 
                 if unsafe_minimum(ρ) > upper_bound
                     continue
@@ -363,7 +367,7 @@ function regularize{T}(Λ_0::PiecewiseQuadratic{T}, ℓ::Array{QuadraticForm{T},
 end
 
 
-function recover_optimal_index_set{T}(Λ::PiecewiseQuadratic{T}, first_index=1, last_index=-1)
+function recover_optimal_index_set{T}(Λ::PiecewiseQuadratic{T}, first_index=1)
 
     p, y, f = find_minimum(Λ)
 
@@ -377,10 +381,10 @@ function recover_optimal_index_set{T}(Λ::PiecewiseQuadratic{T}, first_index=1, 
         end
 
         p = p.ancestor
-    end
 
-    if last_index != -1
-        I[end] = last_index
+        if p.time_index == -1
+            break
+        end
     end
 
     return I, y, f
@@ -430,9 +434,9 @@ end
 
 """
 Evaluate the optimal cost (using least squares) for all
-possible index sets with M segemets
+possible index sets with m segemets
 """
-function brute_force_optimization(ℓ, V_0N::QuadraticPolynomial, M)
+function brute_force_optimization(ℓ, V_0N::QuadraticPolynomial, m::Integer)
     cost_best = Inf
 
     I_best = []
@@ -440,11 +444,11 @@ function brute_force_optimization(ℓ, V_0N::QuadraticPolynomial, M)
 
     N = size(ℓ, 2)
 
-    for I=IterTools.subsets(2:N-1, M-1)
+    for I=IterTools.subsets(2:N-1, m-1)
 
         I = [1; I; N]
-        P = zeros(M+1, M+1)
-        q = zeros(M+1)
+        P = zeros(m+1, m+1)
+        q = zeros(m+1)
         r = 0
 
         # Add cost at right endpoint
@@ -453,7 +457,7 @@ function brute_force_optimization(ℓ, V_0N::QuadraticPolynomial, M)
         r          = V_0N.c
         # Form quadratic cost function Y'*P*Y + q'*Y + r
         # corresponding to the y-values in the vector Y
-        for j=1:M
+        for j=1:m
             P[j:j+1,j:j+1] .+= ℓ[I[j], I[j+1]].P
             q[j:j+1] .+= ℓ[I[j], I[j+1]].q
             r += ℓ[I[j], I[j+1]].r
