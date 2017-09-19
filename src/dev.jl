@@ -126,8 +126,8 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
                     error("Shouldn't end up here")
                 end
             end
-        else # a == 0.0
-            DEBUG && pritnln("Δa == 0")
+        else # Δa == 0.0
+            DEBUG && println("Δa == 0")
             DEBUG2 && println("Δa == 0 : $ρ")
             if Δb == 0
                 if Δc >= 0
@@ -258,7 +258,7 @@ global counter2
 Given the transition costs `ℓ[i,j](y_i,y_j)` and the cost at the endpoint `V_0N(y_N)` find all solutions `f` with up to `M` segments for the problem
 
 V_i^m = minimize_f^M [ Σ_{k=1}^i { ℓ[k,k+1](f(k),f(k+1)) } + V_0N(f(N)) ]
-        s.t          f(k) being continuous piecewise linear with `m` segements.
+s.t          f(k) being continuous piecewise linear with `m` segements.
 
 i.e. `Λ[m,i]` contains the best (in `ℓ` cost) continuous piecewise linear function `f` with up to `M` segments over the interval `i` to `N`
 """
@@ -316,6 +316,32 @@ function find_optimal_fit{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPoly
 end
 
 
+# TODO: regularized
+function  fit_pwl_constrained(g::AbstractArray, M)
+    ℓ = compute_discrete_transition_costs(g);
+    cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
+    fit_pwl_constrained_internal(ℓ, cost_last, M)
+end
+
+function  fit_pwl_constrained(g, t, M)
+    ℓ = compute_transition_costs(g, t);
+    cost_last = QuadraticPolynomial(0.0, 0.0, 0.0)
+    fit_pwl_constrained_internal(ℓ, cost_last, M)
+end
+
+function  fit_pwl_constrained_internal(ℓ, cost_last, M)
+    Λ = compute_value_functions_constrained(ℓ, cost_last, 0.1);
+
+    Ivec = Vector{Vector{Int}}(M)
+    Yvec = Vector{Vector{Float64}}(M)
+    fvec = Vector{Float64}(M)
+
+    for m=1:M
+        Ivec[m], Yvec[m], fvec[m] = recover_solution(Λ[m, 1], ℓ, cost_last)
+    end
+
+    return Ivec, Yvec, fvec
+end
 
 
 
@@ -323,7 +349,7 @@ end
 Solves the regularization problem
 minimzie ∫ (g - y)^2 dt + ζ⋅card(d^2/dt^2 y)
 """
-function regularize{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPolynomial{T}, ζ::T, upper_bound=Inf)
+function regularize{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPolynomial{T}, ζ::T)
     N = size(ℓ, 2)
 
     Λ = Vector{PiecewiseQuadratic{T}}(N)
@@ -332,32 +358,46 @@ function regularize{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPolynomial
     V_0N.time_index = -1
     Λ[N] = create_new_pwq(V_0N)
 
-
     ρ = QuadraticPolynomial{T}()
 
     for i=N-1:-1:1
         Λ_new = create_new_pwq()
         for ip=i+1:N
 
+
+            ζ_level_insertion = false
             for λ in Λ[ip]
                 p = λ.p
                 #counter1 += 1
 
                 minimize_wrt_x2(ℓ[i,ip], p, ρ)
-                ρ.c += ζ
+                ρ.c += ζ # add cost for break point
 
-                if unsafe_minimum(ρ) > upper_bound
-                    continue
-                end
 
                 add_quadratic!(Λ_new, ρ)
 
-                if ρ.has_been_used == true
+
+                if ζ_level_insertion == false
+                    if !poly_minus_constant_is_greater(Λ_new, ρ, ζ)
+                        ζ_level_insertion = true
+                    end
+                end
+
+
+                if ρ.has_been_used
                     ρ.time_index = ip
                     ρ.ancestor = p
                     ρ = QuadraticPolynomial{T}()
                     ρ.has_been_used = false
+
+                    ζ_level_insertion = true
+                else
+                    #@assert test_quadratic(Λ_new, ρ, 0) == false
                 end
+            end
+
+            if ζ_level_insertion == false
+                break
             end
         end
         Λ[i] = Λ_new
@@ -391,7 +431,7 @@ function recover_optimal_index_set{T}(Λ::PiecewiseQuadratic{T}, first_index=1)
 end
 
 """
-Y, f = find_optimal_y_values(ℓ, V_0N, I)
+    Y, f = find_optimal_y_values(ℓ, V_0N, I)
 Given transition costs `ℓ`, cost of right endpoint `V_0N`, and breakpoint indicies `I`
 the optimal y-values `Y` and the optimal cost `f` are computed.
 """
@@ -421,13 +461,17 @@ function find_optimal_y_values(ℓ, V_0N::QuadraticPolynomial, I)
     return Y, f
 end
 
+
+# TODO: Include mζ in the cost?!
 """
     I, Y, f = recover_solution(Λ::PiecewiseQuadratic{T}, ℓ, V_0N::QuadraticPolynomial, first_index=1)
 
 """
-function recover_solution(Λ::PiecewiseQuadratic, ℓ, V_0N::QuadraticPolynomial, first_index=1)
-    I, _, _ = recover_optimal_index_set(Λ, first_index)
+function recover_solution(Λ::PiecewiseQuadratic, ℓ, V_0N::QuadraticPolynomial, ζ=0.0)
+    I, _, f_expected = recover_optimal_index_set(Λ, 1)
     Y, f = find_optimal_y_values(ℓ, V_0N::QuadraticPolynomial, I)
+
+    !isapprox(f + ζ*(length(I)-1), f_expected) && warn("Recovered cost is not what was expected from value function. Solution might be incorrect.")
 
     return I, Y, f
 end
@@ -476,6 +520,109 @@ function brute_force_optimization(ℓ, V_0N::QuadraticPolynomial, m::Integer)
     return I_best, Y_best, cost_best
 end
 
+
+
+"""
+Given a piecewise quadratic V_Λ represented by Λ, a polynomial ρ, and a real number ζ
+this function evaluates if
+ρ(y) > V_Λ(y) + ζ  ∀ y
+"""
+# FIXME: Group polynomial and constant in tuple?
+function poly_minus_constant_is_greater{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}, ζ::Real)
+
+    if Λ.next.left_endpoint == Inf
+        return false
+    end
+
+    for λ_curr in Λ
+
+        left_endpoint = λ_curr.left_endpoint
+        right_endpoint = get_right_endpoint(λ_curr)
+
+        Δa = ρ.a - λ_curr.p.a
+        Δb = ρ.b - λ_curr.p.b
+        Δc = (ρ.c - ζ) - λ_curr.p.c
+
+        b2_minus_4ac =  Δb^2 - 4*Δa*Δc
+
+        if Δa > 0 # ρ has greater curvature, i.e., ρ is smallest in the middle if intersect
+            #println("Δa > 0")
+            if b2_minus_4ac <= 0
+                # Zero (or one) intersections, old quadratic is smallest, just step forward
+                #println("No intersections, old quadratic is smallest, Δa > 0, breaking.")
+                return true
+            else
+
+                # Compute the intersections
+                term1 = -(Δb / 2 / Δa)
+                term2 = sqrt(b2_minus_4ac) / 2 / Δa # Δa > 0
+                root1, root2 = term1-term2, term1+term2
+
+                # Check where the intersections are and act accordingly
+                if root1 >= right_endpoint
+                    continue
+                elseif root2 <= left_endpoint
+                    return true # There will be no more intersections since Δa > 0
+                else
+                    return false
+                end
+            end
+
+        elseif Δa < 0 # ρ has lower curvature, i.e., ρ is smallest on the sides
+            #println("Δa < 0")
+            if b2_minus_4ac <= 0
+                # Zero (or one) roots
+                return false
+            else
+                # Compute the intersections
+                term1 = -(Δb / 2 / Δa)
+                term2 = sqrt(b2_minus_4ac) / 2 / Δa # < 0
+                root1, root2 = term1+term2, term1-term2
+
+                # Check where the intersections are and act accordingly
+                if root1 <= left_endpoint && root2 >= right_endpoint
+                    # One intersection on either side of the interval,
+                    # old quadratic is smallest, just step forward
+                    continue
+                else
+                    return false
+                end
+            end
+        else # Δa == 0.0
+            DEBUG2 && println("Δa == 0 : $ρ")
+            if Δb == 0
+                if Δc >= 0
+
+                else
+                    return false
+                end
+                continue
+            end
+
+            root = -Δc / Δb
+            if Δb > 0
+                if root < left_endpoint
+
+                elseif root > right_endpoint
+                    return false
+                else
+                    return false
+                end
+            else
+                if root < left_endpoint
+                    return false
+                elseif root > right_endpoint
+
+                else
+                    DEBUG2 && println("Special case")
+                    return false
+                end
+            end
+        end
+
+    end
+    return true
+end
 
 
 
