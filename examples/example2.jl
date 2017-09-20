@@ -4,8 +4,9 @@ using Plots
 # The problem Σerror^2 + card(I)
 # Heuristic
 
-include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
+include(joinpath(Pkg.dir("DynamicApproximations"),"src","DynamicApproximations.jl"))
 ##
+DA = DynamicApproximations
 
 data = readdlm(joinpath(Pkg.dir("DynamicApproximations"),"examples","data","snp500.txt"))
 data = data[1:300]
@@ -14,21 +15,21 @@ N = length(data)
 
 
 
-@time ℓ = compute_discrete_transition_costs(data);
+@time ℓ = DA.compute_discrete_transition_costs(data);
 
 #@time I, Y, f = brute_force_optimization(ℓ, K-1);
 
-cost_last = QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
+cost_last = DA.QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
 
 start_time = time()
 gc()
-@time Λ = find_optimal_fit(ℓ, cost_last, 10, 1.65);
+@time Λ = DA.find_optimal_fit(ℓ, cost_last, 10, 1.65);
 println("Time: ", time()-start_time)
 
 #println(counter1, " ", counter2)
 
 for k=3:10
-    println(k, " : ", recover_optimal_index_set(Λ[k, 1], 1, N)[3])
+    println(k, " : ", DA.recover_optimal_index_set(Λ[k, 1])[3])
 end
 ###
 
