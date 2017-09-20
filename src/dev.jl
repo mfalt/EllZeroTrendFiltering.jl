@@ -31,7 +31,7 @@ quadratic polynomial, so that the new `Λ` satisfies
 """
 function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
 
-    DEBUG && println("Inserting: ", ρ)
+
     if Λ.next.left_endpoint == Inf # I.e. the piecewise quadratic object is empty, perhaps better to add dummy polynomial
         ρ.has_been_used = true
         insert(Λ, ρ, -Inf)
@@ -286,17 +286,23 @@ function find_optimal_fit{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPoly
         for i=1:N-m
             Λ_new = create_new_pwq()
             for ip=i+1:N-m+1
-
+                DEBUG && println("(m:$m, i:$i, ip:$ip)")
                 for λ in Λ[m-1, ip]
                     p = λ.p
 
-                    #counter1 += 1
+                    #counter1 +=
 
                     minimize_wrt_x2(ℓ[i,ip], p, ρ)
+
+                    DEBUG && println("Obtained ρ = $ρ")
+
                     ρmin = unsafe_minimum(ρ)
                     if ρmin > upper_bound || ρmin > upper_bound_inner
+                        DEBUG && println("Breaking due to that $ρmin > max($upper_bound, $upper_bound_inner)")
                         continue
                     end
+
+                    DEBUG && println("Inserting...")
 
                     add_quadratic!(Λ_new, ρ)
 
@@ -311,6 +317,7 @@ function find_optimal_fit{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPoly
             Λ[m, i] = Λ_new
             if i == 1
                 _, _, upper_bound_inner = find_minimum(Λ[m,1])
+                upper_bound_inner += sqrt(eps())
             end
         end
     end

@@ -12,14 +12,9 @@ include(joinpath(Pkg.dir("DynamicApproximations"),"test","problems", "straight_l
 @testset "Data set: $problem_fcn" for problem_fcn in [straight_line_problem, square_wave_problem, exp_problem, snp500_problem]
 
 ##
-problem_fcn = straight_line_problem
 g, M_bf, ζvec, I_sols, f_sols = problem_fcn()
 
-g = 0:0.1:1
-
-M = length(I_sols)
-
-#g = exp.(linspace(0,5,11))
+length(I_sols)
 
 @time ℓ = dev.compute_discrete_transition_costs(g);
 cost_last = dev.QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
@@ -64,7 +59,7 @@ end
     m_expected = indmin([f_sols[m] + m*ζ for m=1:length(f_sols)])
 
     @test m_expected == length(I) - 1
-    @test isempty(I_sols[m]) || I == I_sols[m_expected]
+    @test isempty(I_sols[m_expected]) || I == I_sols[m_expected]
     @test f_reg ≈ f_sols[m_expected] + ζ*m_expected
 
     #println(problem_fcn, "  " , length(I))
