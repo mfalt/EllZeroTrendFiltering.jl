@@ -2,12 +2,7 @@
 # Piecewise Linear Continouous Interpolation Constraints
 # Sparse L2 Optimal Fitting subject Continuity Constraints
 # Integrated Square
-
-using Base.Test
-
-include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
-
-
+using DynamicApproximations: minimize_wrt_x2
 
 using Polynomials
 using IterTools
@@ -25,23 +20,23 @@ z(t) = ran[floor(Int64, t/4pi*(N-1))+1]
 g = sin
 g2(t) = g(t) + z(t)
 
-@time ℓ = dev.compute_transition_costs(g, t);
+@time ℓ = compute_transition_costs(g, t);
 
 
 K = 7
-#@time I, Y, f = dev.brute_force_optimization(ℓ, K-1);
+#@time I, Y, f = brute_force_optimization(ℓ, K-1);
 
 
-Λ_0 = [dev.create_new_pwq(dev.minimize_wrt_x2(ℓ[i, N])) for i in 1:N-1];
+Λ_0 = [create_new_pwq(minimize_wrt_x2(ℓ[i, N])) for i in 1:N-1];
 
-@time Λ = dev.find_optimal_fit(Λ_0, ℓ, 7);
-dev.tot
+@time Λ = find_optimal_fit(Λ_0, ℓ, 7);
+tot
 
 using Plots
 plot(t, g.(t), lab="g(t)")
 for k = 7:7
-    @time I2, y2, f2 = dev.recover_solution(Λ[k, 1], 1, N)
-    Y2, _ = dev.find_optimal_y_values(ℓ, I2)
+    @time I2, y2, f2 = recover_solution(Λ[k, 1], 1, N)
+    Y2, _ = find_optimal_y_values(ℓ, I2)
 
     println("Comparison: ", sqrt(f), " --- ", sqrt(f2))
 

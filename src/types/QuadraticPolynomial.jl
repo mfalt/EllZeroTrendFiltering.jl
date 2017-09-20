@@ -1,3 +1,5 @@
+export find_minimum, roots
+
 # Quadratic Polynomial to represent cost-to-go function,
 # keeos track of its "ancestor" to simplify the recovery of the solution
 # has_been_used keeps track of if the Quadratic polynimial has been inserted
@@ -38,13 +40,13 @@ Base.zero{T<:QuadraticPolynomial}(S::T) = zero(T)
 
 -(p1::QuadraticPolynomial, p2::QuadraticPolynomial) = QuadraticPolynomial(p1.a-p2.a, p1.b-p2.b, p1.c-p2.c)
 
-# x .= y .- z
-# x .= y .+ z
-function Base.broadcast!{T}(op::Function, x::QuadraticPolynomial{T}, y::QuadraticPolynomial{T}, z::QuadraticPolynomial{T})
-    x.a = op(y.a,z.a)
-    x.b = op(y.b,z.b)
-    x.c = op(y.c,z.c)
-end
+# # x .= y .- z
+# # x .= y .+ z
+# function Base.broadcast!{T}(op::Function, x::QuadraticPolynomial{T}, y::QuadraticPolynomial{T}, z::QuadraticPolynomial{T})
+#     x.a = op(y.a,z.a)
+#     x.b = op(y.b,z.b)
+#     x.c = op(y.c,z.c)
+# end
 
 ==(p1::QuadraticPolynomial, p2::QuadraticPolynomial) = (p1.a==p2.a) && (p1.b==p2.b) && (p1.c==p2.c)
 
@@ -57,9 +59,12 @@ end
 # Finds the minimum of a positive definite quadratic one variable polynomial
 # the find_minimum fcn returns (opt_x, opt_val)
 function find_minimum(p::QuadraticPolynomial)
-    if p.a <= 0
+    if p.a < 0 || (p.a == 0 && p.b != 0)
         println("No unique minimum exists")
         return (NaN, NaN)
+    elseif p.a == 0
+        # p.b == 0
+        return (NaN, p.c)
     else
         x_opt = -p.b / 2 / p.a
         f_opt = -p.b^2/4/p.a + p.c

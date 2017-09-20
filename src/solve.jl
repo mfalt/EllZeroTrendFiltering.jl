@@ -1,27 +1,4 @@
 
-module dev
-
-import Base.-
-import Base.+
-import Base.show
-import Base.Operators
-import Base: start, next, done, length, zero, getindex, ==
-
-import IterTools
-using StaticArrays
-using QuadGK
-using Plots
-
-include("types/QuadraticPolynomial.jl")
-include("types/PiecewiseQuadratic.jl")
-include("types/QuadraticForm.jl")
-
-include("transition_cost_computation.jl")
-
-global const DEBUG = false
-global const DEBUG2 = false
-global const COUNTER_TEST = false
-
 # TODO come up with better symbol for ρ
 """
     add_quadratic!(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}) where {T}
@@ -163,8 +140,6 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
     return
 end
 
-
-
 @inline function update_segment_do_nothing(λ_curr)
     return λ_curr, λ_curr.next
 end
@@ -275,16 +250,22 @@ function find_optimal_fit{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPoly
     Λ = Array{PiecewiseQuadratic{T}}(M, N)
 
     for i=1:N-1
-        p = dev.minimize_wrt_x2(ℓ[i, N], V_0N)
+        p = minimize_wrt_x2(ℓ[i, N], V_0N)
         p.time_index = N
-        Λ[1, i] .= dev.create_new_pwq(p)
+        Λ[1, i] .= create_new_pwq(p)
     end
 
     ρ = QuadraticPolynomial{T}()
     upper_bound_inner = Inf
+    global times
     for m=2:M
+        #println("m: $m")
         for i=1:N-m
             Λ_new = create_new_pwq()
+            if min(upper_bound, upper_bound_inner) < Inf
+                OPTIMIZE && add_quadratic!(Λ_new, QuadraticPolynomial{T}(0.0, 0.0, min(upper_bound,upper_bound_inner)))
+            end
+            #println("m: $m, i: $i")
             for ip=i+1:N-m+1
                 DEBUG && println("(m:$m, i:$i, ip:$ip)")
                 for λ in Λ[m-1, ip]
@@ -314,16 +295,18 @@ function find_optimal_fit{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPoly
                     end
                 end
             end
+            #remove_over(Λ_new, min(upper_bound_inner,upper_bound))
             Λ[m, i] = Λ_new
             if i == 1
-                _, _, upper_bound_inner = find_minimum(Λ[m,1])
-                upper_bound_inner += sqrt(eps())
+                if OPTIMIZE
+                    upper_bound_inner = find_minimum_value(Λ[m,1])
+			upper_bound_inner += sqrt(eps())
+                end
             end
         end
     end
     return Λ
 end
-
 
 # TODO: regularized
 function  fit_pwl_constrained(g::AbstractArray, M)
@@ -351,8 +334,6 @@ function  fit_pwl_constrained_internal(ℓ, cost_last, M)
 
     return Ivec, Yvec, fvec
 end
-
-
 
 """
 Solves the regularization problem
@@ -633,9 +614,4 @@ function poly_minus_constant_is_greater{T}(Λ::PiecewiseQuadratic{T}, ρ::Quadra
 
     end
     return true
-end
-
-
-
-# end of module
 end

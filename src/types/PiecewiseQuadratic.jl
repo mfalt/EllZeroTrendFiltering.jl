@@ -1,3 +1,6 @@
+export create_new_pwq, generate_PiecewiseQuadratic, insert, delete_next
+export get_right_endpoint, evalPwq, get_vals, find_minimum, find_minimum_value
+
 """
     PiecewiseQuadratic{T}
 
@@ -63,7 +66,7 @@ next{T}(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) = (itersta
 
 
 # For trouble-shooting etc.
-function getindex(Λ::dev.PiecewiseQuadratic, n::Integer)
+function getindex(Λ::PiecewiseQuadratic, n::Integer)
     if n <= 0
         throw(BoundsError(Λ, n))
     end
@@ -172,7 +175,7 @@ function get_vals(Λ::PiecewiseQuadratic)
             right_endpoint = 10.
         end
 
-        y_grid_gray = linspace(left_endpoint-1, right_endpoint+1)
+        y_grid_gray = linspace(left_endpoint, right_endpoint)
         push!(x_all, y_grid_gray)
         push!(y_all, λ.p.(y_grid_gray))
 
@@ -183,17 +186,17 @@ function get_vals(Λ::PiecewiseQuadratic)
     return x, y, x_all, y_all
 end
 
-
-function plot_pwq(Λ::PiecewiseQuadratic)
-    x, y, x_all, y_all = get_vals(Λ)
-    p = plot(x,y, l =(3,:red), lab="minimum", size=(1200,800))
-    for i in eachindex(x_all)
-        plot!(p, x_all[i][[1,end]], y_all[i][[1,end]], l = 0, m=(1,:cross,:orange))
-        plot!(p, x_all[i], y_all[i], l=(1,:blue), lab="")
-    end
-    p
-    return p
-end
+#
+# function plot_pwq(Λ::PiecewiseQuadratic)
+#     x, y, x_all, y_all = get_vals(Λ)
+#     p = plot(x,y, l =(3,:red), lab="minimum", size=(1200,800))
+#     for i in eachindex(x_all)
+#         plot!(p, x_all[i][[1,end]], y_all[i][[1,end]], l = 0, m=(1,:cross,:orange))
+#         plot!(p, x_all[i], y_all[i], l=(1,:blue), lab="")
+#     end
+#     p
+#     return p
+# end
 
 """
     p_opt, x_opt, f_opt = find_minimum(Λ::PiecewiseQuadratic)
@@ -218,4 +221,19 @@ function find_minimum(Λ::PiecewiseQuadratic)
         end
     end
     return p_opt, x_opt, f_opt
+end
+
+function find_minimum_value(Λ::PiecewiseQuadratic)
+    f_opt = Inf
+
+    for λ in Λ
+        _, f = find_minimum(λ.p)
+        if f < f_opt
+            f_opt = f
+        end
+    end
+    if isnan(f_opt)
+        println("find_minimum_value failed to find a minimum, no minimum exists")
+    end
+    return f_opt
 end

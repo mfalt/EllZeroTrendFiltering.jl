@@ -5,7 +5,7 @@
 Computes the transition costs `ℓ` given a
 function `g` and a time sequence `t`
 """
-function compute_transition_costs(g, t::AbstractArray)
+function compute_transition_costs(g, t::AbstractArray, tol=1e-3)
     T = Float64
     # Find primitive functions to g, t*g, and g^2
     # and evaluate them at the break points
@@ -21,10 +21,9 @@ function compute_transition_costs(g, t::AbstractArray)
     I_tg = zeros(size(t))
 
     for i=2:N
-        const tol = 1e-3
         I_g[i] = I_g[i-1] + quadgk(g, t[i-1], t[i], reltol=tol)[1]
-        I_g2[i] = I_g2[i-1] + quadgk(t -> g(t)^2, t[i-1], t[i], reltol=tol)[1]
-        I_tg[i] = I_tg[i-1] + quadgk(t -> t*g(t), t[i-1], t[i], reltol=tol)[1]
+        I_g2[i] = I_g2[i-1] + quadgk(τ -> g(τ)^2, t[i-1], t[i], reltol=tol)[1]
+        I_tg[i] = I_tg[i-1] + quadgk(τ -> τ*g(τ), t[i-1], t[i], reltol=tol)[1]
     end
 
     ℓ = Array{QuadraticForm{T}}(N-1,N)
@@ -44,6 +43,11 @@ function compute_transition_costs(g, t::AbstractArray)
         end
     end
 
+    for i = 1:N-1, ip = i+1:N
+        P, q, r = ℓ[i,ip].P, ℓ[i,ip].q, ℓ[i,ip].r
+        minval = -q⋅(P\q)/4+r
+        minval < 0 && error("Transition cost is negative for some values in `compute_transition_costs`, try decreasing rtol.")
+    end
     return ℓ
 end
 
