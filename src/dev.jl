@@ -10,7 +10,7 @@ import Base: start, next, done, length, zero, getindex, ==
 import IterTools
 using StaticArrays
 using QuadGK
-
+using Plots
 
 include("types/QuadraticPolynomial.jl")
 include("types/PiecewiseQuadratic.jl")
@@ -270,6 +270,8 @@ function find_optimal_fit{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPoly
 
     N = size(ℓ, 2)
 
+    @assert M-1 <= N "Cannot have more segments than N-1."
+
     Λ = Array{PiecewiseQuadratic{T}}(M, N)
 
     for i=1:N-1
@@ -471,7 +473,9 @@ function recover_solution(Λ::PiecewiseQuadratic, ℓ, V_0N::QuadraticPolynomial
     I, _, f_expected = recover_optimal_index_set(Λ, 1)
     Y, f = find_optimal_y_values(ℓ, V_0N::QuadraticPolynomial, I)
 
-    !isapprox(f + ζ*(length(I)-1), f_expected) && warn("Recovered cost is not what was expected from value function. Solution might be incorrect.")
+    f_regularized = f + ζ*(length(I)-1) # Include regularization cost
+
+    !isapprox(f_regularized, f_expected, atol=1e-10) && warn("Recovered cost ($f_regularized) is not what was expected from value function ($f_expected). Solution might be incorrect.")
 
     return I, Y, f
 end
