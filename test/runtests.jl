@@ -1,12 +1,17 @@
 using DynamicApproximations
 using Base.Test
 
+tests = [
+    "quadratic_polynomials.jl"
+    "quadratic_forms.jl"
+    "piecewise_quadratics.jl"
+    "transition_costs.jl"
+    "discrete_transition_costs.jl"
+    "find_optimal_fit.jl"
+    "test_discrete_fit.jl"]
+
 @testset "All Tests" begin
-    include("quadratic_polynomials.jl")
-    include("quadratic_forms.jl")
-    include("piecewise_quadratics.jl")
-    include("transition_costs.jl")
-    include("discrete_transition_costs.jl")
-    include("find_optimal_fit.jl")
-    include("test_discrete_fit.jl")
+    @testset "Testfile: $test" for test in tests
+        include(test)
+    end
 end
