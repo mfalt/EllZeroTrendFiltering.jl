@@ -308,7 +308,34 @@ function find_optimal_fit{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPoly
     return Λ
 end
 
-# TODO: regularized
+function  fit_pwl_reguralized(g::AbstractArray, ζ)
+    ℓ = compute_discrete_transition_costs(g);
+    # Discrete case, so cost at endpoint is quadratic
+    cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
+    fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
+end
+
+function  fit_pwl_reguralized(g, t, ζ, tol=1e-3)
+    ℓ = compute_transition_costs(g, t, tol);
+    # Continouous case, no cost at endpoint
+    cost_last = QuadraticPolynomial(0.0, 0.0, 0.0)
+    fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
+end
+
+function  fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
+    Λ_reg = regularize(ℓ, cost_last, ζ)
+    #Get solution that starts at first index
+    I, _, f_reg = recover_optimal_index_set(Λ_reg[1])
+    Y, f = find_optimal_y_values(ℓ, cost_last, I)
+    return I, Y, f
+end
+
+
+# recover_optimal_index_set returns the cost inclusive the regularization penality,
+# revober optimal solution does not do so. It is arguably more interesting
+# to test cost including regularization.
+
+
 function  fit_pwl_constrained(g::AbstractArray, M)
     ℓ = compute_discrete_transition_costs(g);
     cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
@@ -322,7 +349,7 @@ function  fit_pwl_constrained(g, t, M)
 end
 
 function  fit_pwl_constrained_internal(ℓ, cost_last, M)
-    Λ = compute_value_functions_constrained(ℓ, cost_last, 0.1);
+    Λ = find_optimal_fit(ℓ, cost_last, M);
 
     Ivec = Vector{Vector{Int}}(M)
     Yvec = Vector{Vector{Float64}}(M)
