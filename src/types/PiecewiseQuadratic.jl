@@ -175,13 +175,12 @@ function get_vals(Λ::PiecewiseQuadratic)
             right_endpoint = 10.
         end
 
-        y_grid_gray = linspace(left_endpoint, right_endpoint)
-        push!(x_all, y_grid_gray)
-        push!(y_all, λ.p.(y_grid_gray))
-
         y_grid = linspace(left_endpoint, right_endpoint)
+        vals =  λ.p.(y_grid)
         append!(x, y_grid)
-        append!(y, λ.p.(y_grid))
+        append!(y, vals)
+        push!(x_all, y_grid_gray)
+        push!(y_all, vals)
     end
     return x, y, x_all, y_all
 end
