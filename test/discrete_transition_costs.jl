@@ -1,6 +1,5 @@
-using Base.Test
+using Base.Test, DynamicApproximations
 using Interpolations
-include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 
 srand(31415)
 ## Test 1
@@ -21,7 +20,7 @@ t = linspace(0,π,50)
 g = sin.(t)
 
 
-ℓ = dev.compute_discrete_transition_costs(g)
+ℓ = compute_discrete_transition_costs(g)
 
 ## Test 1a
 I1 = [1,10,30,40,50]
@@ -47,7 +46,7 @@ y1 = interpolate((I1,), Y1, Gridded(Linear()))[1:length(g)]
 
     ## Test 2
     # Check the transition costs for a simple example
-    ℓ = dev.compute_discrete_transition_costs([1.0, 2.0, 3.0])
+    ℓ = compute_discrete_transition_costs([1.0, 2.0, 3.0])
 
     # (y - 1)^2
     @test ℓ[1,2].P == [1.0 0.0; 0.0 0.0]

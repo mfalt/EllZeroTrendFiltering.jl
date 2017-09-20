@@ -14,30 +14,30 @@ N = length(data)
 
 
 
-@time ℓ = dev.compute_discrete_transition_costs(data);
+@time ℓ = compute_discrete_transition_costs(data);
 
-#@time I, Y, f = dev.brute_force_optimization(ℓ, K-1);
+#@time I, Y, f = brute_force_optimization(ℓ, K-1);
 
-cost_last = dev.QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
+cost_last = QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
 
 start_time = time()
 gc()
-@time Λ = dev.find_optimal_fit(ℓ, cost_last, 10, 1.65);
+@time Λ = find_optimal_fit(ℓ, cost_last, 10, 1.65);
 println("Time: ", time()-start_time)
 
-#println(dev.counter1, " ", dev.counter2)
+#println(counter1, " ", counter2)
 
 for k=3:10
-    println(k, " : ", dev.recover_optimal_index_set(Λ[k, 1], 1, N)[3])
+    println(k, " : ", recover_optimal_index_set(Λ[k, 1], 1, N)[3])
 end
 ###
 
-@time I2, y2, f2 = dev.recover_optimal_index_set(Λ[7, 1], 1, N)
+@time I2, y2, f2 = recover_optimal_index_set(Λ[7, 1], 1, N)
 println(I2)
-Y2, f2_2 = dev.find_optimal_y_values(ℓ, cost_last, I2)
+Y2, f2_2 = find_optimal_y_values(ℓ, cost_last, I2)
 
 
-I2, Y2, f3 = dev.recover_solution(Λ[7, 1], ℓ, cost_last, )
+I2, Y2, f3 = recover_solution(Λ[7, 1], ℓ, cost_last, )
 #println("Comparison: ", sqrt(f), " --- ", sqrt(f2))
 
 
@@ -54,9 +54,9 @@ plot!(l', subplot=2)
 sum(l)
 ##
 
-I2, y2, f2 = dev.recover_solution(Λ[6, 1], 1, N)
+I2, y2, f2 = recover_solution(Λ[6, 1], 1, N)
 println(I2)
-Y2, _ = dev.find_optimal_y_values(ℓ, I2)
+Y2, _ = find_optimal_y_values(ℓ, I2)
 
 plot(data)
 plot!(I2, Y2)

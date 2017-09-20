@@ -20,7 +20,7 @@ I_sets = [
 [1, 365, 515, 545, 628, 769, 837, 987, 1190, 1853, 2000]
 ]
 
-cost_l0 = [dev.find_optimal_y_values(ℓ, I_sets[k])[2] for k=1:10]
+cost_l0 = [find_optimal_y_values(ℓ, I_sets[k])[2] for k=1:10]
 
 
 #---
@@ -45,7 +45,7 @@ x = Variable(N)
 #---
 r = 6
 I = I_sets[r]
-Y, _ = dev.find_optimal_y_values(ℓ, I)
+Y, _ = find_optimal_y_values(ℓ, I)
 y_l0 = interpolate((I,), Y, Gridded(Linear()))[1.0:N]
 
 
@@ -69,7 +69,7 @@ plot(H*y_l1)
 plot!(v[end-r+2:end], zeros(r-1), m=:circle)
 
 I_l1 = [1; sort(v[end-r+2:end]); N]
-Y_l1, f_l1 = dev.find_optimal_y_values(ℓ, I_l1)
+Y_l1, f_l1 = find_optimal_y_values(ℓ, I_l1)
 
 y_l10 = interpolate((I_l1,), Y_l1, Gridded(Linear()))[1.0:N]
 
@@ -98,7 +98,7 @@ for (k, λ)=enumerate(λ_vec)
     v = sortperm(abs.(H*y_l1) + 1*is_local_max(abs.(H*y_l1)))
     for r=1:10
         I_l1 = [1; sort(v[end-r+2:end]); N]
-        _, f_l1 = dev.find_optimal_y_values(ℓ, I_l1)
+        _, f_l1 = find_optimal_y_values(ℓ, I_l1)
         cost[k, r] = f_l1
     end
 end

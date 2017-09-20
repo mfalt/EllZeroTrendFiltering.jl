@@ -1,7 +1,5 @@
-#using DynamicApproximations
+using DynamicApproximations
 using Base.Test
-
-include(joinpath(Pkg.dir("DynamicApproximations"),"src","dev.jl"))
 
 @testset "All Tests" begin
     include("quadratic_polynomials.jl")
