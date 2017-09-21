@@ -23,3 +23,9 @@ using DynamicApproximations: unsafe_minimum
 
 # (3x+1)^2 + 1 = 9x^2 + 6x + 2
 @test unsafe_minimum(QuadraticPolynomial(9.0, 6.0, 2.0)) == 1.0
+
+@test zero(QuadraticPolynomial{Float64}) == QuadraticPolynomial(0.0, 0.0, 0.0)
+
+@test zero(QuadraticPolynomial(4.0, -2.0, 3.0)) == QuadraticPolynomial(0.0, 0.0, 0.0)
+
+@test zero(QuadraticPolynomial(4, -2, 3)) == QuadraticPolynomial(0, 0, 0)

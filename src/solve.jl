@@ -320,7 +320,7 @@ function  fit_pwl_reguralized(g, t, ζ, tol=1e-3; lazy=true)
     ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
                compute_transition_costs(g, t, tol)
     # Continouous case, no cost at endpoint
-    cost_last = QuadraticPolynomial(0.0, 0.0, 0.0)
+    cost_last = zero(QuadraticPolynomial{Float64})
     fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
 end
 
@@ -348,7 +348,7 @@ end
 function  fit_pwl_constrained(g, t, M, tol=1e-3; lazy=false)
     ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
                compute_transition_costs(g, t, tol)
-    cost_last = QuadraticPolynomial(0.0, 0.0, 0.0)
+    cost_last = zero(QuadraticPolynomial{Float64})
     fit_pwl_constrained_internal(ℓ, cost_last, M)
 end
 
