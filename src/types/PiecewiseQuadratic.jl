@@ -132,8 +132,16 @@ function show{T}(io::IO, Λ::PiecewiseQuadratic{T})
     return
 end
 
+function (Λ::PiecewiseQuadratic)(x::Number)
+    for λ in Λ
+        if λ.left_endpoint <= x < get_right_endpoint(λ)
+            return λ.p(x)
+        end
+    end
+    return NaN
+end
 
-function evalPwq(Λ::PiecewiseQuadratic, x)
+function (Λ::PiecewiseQuadratic)(x::AbstractArray)
     y = zeros(x)
     for λ in Λ
         inds = λ.left_endpoint .<= x .< get_right_endpoint(λ)
@@ -179,7 +187,7 @@ function get_vals(Λ::PiecewiseQuadratic)
         vals =  λ.p.(y_grid)
         append!(x, y_grid)
         append!(y, vals)
-        push!(x_all, y_grid_gray)
+        push!(x_all, y_grid)
         push!(y_all, vals)
     end
     return x, y, x_all, y_all

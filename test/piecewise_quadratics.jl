@@ -52,7 +52,13 @@ function verify_piecewise_quadratic(c_mat, show_plot=false)
     # Check that the piecewise quadratic is smaller than all the quadratics
     # that it was formed by
     x_grid = -5:0.1:5
-    y_pwq = evalPwq(pwq, x_grid)
+    y_pwq = pwq(x_grid)
+    # Test both versions of evaluating piecewise-quadratic
+    @test y_pwq ≈ pwq.(x_grid)  rtol=sqrt(eps())
+
+    # Test get_vals
+    x, y, x_all, y_all = get_vals(pwq)
+    @test pwq(x) ≈ y            rtol = sqrt(eps())
 
     for p in poly_list
         TEST_PRINT_LEVEL > 0 && @printf("suboptimality diff: %2.3f\n", maximum(y_pwq - p.(x_grid)))

@@ -27,6 +27,10 @@ global const OPTIMIZE = true
 include(joinpath("types","QuadraticPolynomial.jl"))
 include(joinpath("types","PiecewiseQuadratic.jl"))
 include(joinpath("types","QuadraticForm.jl"))
+include(joinpath("types","TransitionCostLazy.jl"))
+
+
+AbstractTransitionCost{T} = Union{Array{QuadraticForm{T},2}, AbstractTransitionCostLazy{T}}
 
 include("solve.jl")
 include("transition_cost_computation.jl")

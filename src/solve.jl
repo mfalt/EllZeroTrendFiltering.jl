@@ -228,7 +228,7 @@ global counter1
 global counter2
 
 """
-    Λ = find_optimal_fit(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf) where {T}
+    Λ = find_optimal_fit(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf) where {T}
 
 Given the transition costs `ℓ[i,j](y_i,y_j)` and the cost at the endpoint `V_0N(y_N)` find all solutions `f` with up to `M` segments for the problem
 
@@ -237,7 +237,7 @@ s.t          f(k) being continuous piecewise linear with `m` segements.
 
 i.e. `Λ[m,i]` contains the best (in `ℓ` cost) continuous piecewise linear function `f` with up to `M` segments over the interval `i` to `N`
 """
-function find_optimal_fit{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf)
+function find_optimal_fit{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf)
     #global counter1
     #global counter2
     #counter1 = 0
@@ -308,15 +308,17 @@ function find_optimal_fit{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPoly
     return Λ
 end
 
-function  fit_pwl_reguralized(g::AbstractArray, ζ)
-    ℓ = compute_discrete_transition_costs(g);
+function  fit_pwl_reguralized(g::AbstractArray, ζ; lazy=true)
+    ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
+               compute_discrete_transition_costs(g)
     # Discrete case, so cost at endpoint is quadratic
     cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
     fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
 end
 
-function  fit_pwl_reguralized(g, t, ζ, tol=1e-3)
-    ℓ = compute_transition_costs(g, t, tol);
+function  fit_pwl_reguralized(g, t, ζ, tol=1e-3; lazy=true)
+    ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
+               compute_transition_costs(g, t, tol)
     # Continouous case, no cost at endpoint
     cost_last = QuadraticPolynomial(0.0, 0.0, 0.0)
     fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
@@ -336,14 +338,16 @@ end
 # to test cost including regularization.
 
 
-function  fit_pwl_constrained(g::AbstractArray, M)
-    ℓ = compute_discrete_transition_costs(g);
+function  fit_pwl_constrained(g::AbstractArray, M; lazy=false)
+    ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
+               compute_discrete_transition_costs(g)
     cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
     fit_pwl_constrained_internal(ℓ, cost_last, M)
 end
 
-function  fit_pwl_constrained(g, t, M)
-    ℓ = compute_transition_costs(g, t);
+function  fit_pwl_constrained(g, t, M, tol=1e-3; lazy=false)
+    ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
+               compute_transition_costs(g, t, tol)
     cost_last = QuadraticPolynomial(0.0, 0.0, 0.0)
     fit_pwl_constrained_internal(ℓ, cost_last, M)
 end
@@ -366,7 +370,7 @@ end
 Solves the regularization problem
 minimzie ∫ (g - y)^2 dt + ζ⋅card(d^2/dt^2 y)
 """
-function regularize{T}(ℓ::Array{QuadraticForm{T},2}, V_0N::QuadraticPolynomial{T}, ζ::T)
+function regularize{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, ζ::T)
     N = size(ℓ, 2)
 
     Λ = Vector{PiecewiseQuadratic{T}}(N)

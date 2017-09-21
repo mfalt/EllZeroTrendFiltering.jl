@@ -5,7 +5,7 @@
 Computes the transition costs `ℓ` given a
 function `g` and a time sequence `t`
 """
-function compute_transition_costs(g, t::AbstractArray, tol=1e-3)
+function compute_transition_costs(g, t::AbstractVector, tol=1e-3)
     T = Float64
     # Find primitive functions to g, t*g, and g^2
     # and evaluate them at the break points
@@ -16,9 +16,9 @@ function compute_transition_costs(g, t::AbstractArray, tol=1e-3)
     N = length(t)
 
     # Find primitive functions to g, t*g, and g^2 at the break points
-    I_g = zeros(size(t))
-    I_g2 = zeros(size(t))
-    I_tg = zeros(size(t))
+    I_g = zeros(N)
+    I_g2 = zeros(N)
+    I_tg = zeros(N)
 
     for i=2:N
         I_g[i] = I_g[i-1] + quadgk(g, t[i-1], t[i], reltol=tol)[1]
