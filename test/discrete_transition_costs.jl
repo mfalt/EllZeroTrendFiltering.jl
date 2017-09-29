@@ -30,6 +30,17 @@ y1 = interpolate((I1,), Y1, Gridded(Linear()))[1:length(g)]
 
 @test compute_cost(ℓ,I1,Y1) ≈ sum((y1[1:end-1]-g[1:end-1]).^2)
 
+# Test with t grid
+t_subsampled = [1, 10, 21, 33, 50]
+ℓ_subsampled = compute_discrete_transition_costs(g, t=t_subsampled)
+
+for i in 1:length(t_subsampled)-1
+    for ip in (i+1):length(t_subsampled)
+        t_i = t_subsampled[i]
+        t_ip = t_subsampled[ip]
+        @test ℓ_subsampled[i, ip] == ℓ[t_i, t_ip]
+    end
+end
 
 ## Test 1b
 I2 = [1,15,30,36,50]

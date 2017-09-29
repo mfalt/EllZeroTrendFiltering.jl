@@ -45,11 +45,12 @@ struct TransitionCostDiscrete{T, FT<:AbstractArray} <: AbstractTransitionCostLaz
     G1::Vector{T}
     G2::Vector{T}
     G3::Vector{T}
+    t::Vector{Int}
 end
 
-Base.size(tc::TransitionCostDiscrete) = (length(tc.g)-1, length(tc.g))
+Base.size(tc::TransitionCostDiscrete) = (length(tc.t)-1, length(tc.t))
 
-function TransitionCostDiscrete{T}(g::FT) where {T,FT}
+function TransitionCostDiscrete{T}(g::FT; t=1:length(g)) where {T,FT}
     N = length(g)
 
     # Find sums of g, k*g, and g^2
@@ -75,18 +76,19 @@ function TransitionCostDiscrete{T}(g::FT) where {T,FT}
     end
 
     P_mats = P_mats ./ (1.0:N-1).^2 # FIXME:
-    TransitionCostDiscrete{T,FT}(g, P_mats, G1, G2, G3)
+    TransitionCostDiscrete{T,FT}(g, P_mats, G1, G2, G3, collect(t))
 end
 
 function getindex(tc::TransitionCostDiscrete, i::Integer, ip::Integer)
+    t_i = tc.t[i]
+    t_ip = tc.t[ip]
+    q = -2* 1/(t_ip-t_i) *
+    @SVector [-(tc.G2[t_ip] - tc.G2[t_i]) + t_ip*(tc.G1[t_ip] - tc.G1[t_i]),
+    (tc.G2[t_ip] - tc.G2[t_i]) - t_i*(tc.G1[t_ip] - tc.G1[t_i])]
 
-    q = -2* 1/(ip-i) *
-    @SVector [-(tc.G2[ip] - tc.G2[i]) + ip*(tc.G1[ip] - tc.G1[i]),
-    (tc.G2[ip] - tc.G2[i]) - i*(tc.G1[ip] - tc.G1[i])]
+    r =  tc.G3[t_ip] - tc.G3[t_i]
 
-    r =  tc.G3[ip] - tc.G3[i]
-
-    return QuadraticForm(tc.P_mats[ip-i], q, r)
+    return QuadraticForm(tc.P_mats[t_ip-t_i], q, r)
 end
 
 Base.size(tc::AbstractTransitionCostLazy, i::Integer) = size(tc)[i]

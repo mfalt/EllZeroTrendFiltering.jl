@@ -7,47 +7,57 @@ function `g` and a time sequence `t`
 """
 function compute_transition_costs(g, t::AbstractVector, tol=1e-3)
     T = Float64
-    # Find primitive functions to g, t*g, and g^2
-    # and evaluate them at the break points
-    #I_g = polyint(g).(t)
-    #I_g2 = polyint(g^2).(t)
-    #I_tg = polyint(Poly([0,1]) * g).(t)
-
+    ℓ_lazy = TransitionCostContinuous{T}(g, t)
     N = length(t)
-
-    # Find primitive functions to g, t*g, and g^2 at the break points
-    I_g = zeros(N)
-    I_g2 = zeros(N)
-    I_tg = zeros(N)
-
-    for i=2:N
-        I_g[i] = I_g[i-1] + quadgk(g, t[i-1], t[i], reltol=tol)[1]
-        I_g2[i] = I_g2[i-1] + quadgk(τ -> g(τ)^2, t[i-1], t[i], reltol=tol)[1]
-        I_tg[i] = I_tg[i-1] + quadgk(τ -> τ*g(τ), t[i-1], t[i], reltol=tol)[1]
-    end
-
     ℓ = Array{QuadraticForm{T}}(N-1,N)
-
-    for i=1:N-1
-        for ip=i+1:N
-
-            P = (t[ip] - t[i]) * @SMatrix [1/3 1/6; 1/6 1/3]
-
-            q = -2* 1/(t[ip]-t[i]) *
-            @SVector [-(I_tg[ip] - I_tg[i]) + t[ip]*(I_g[ip] - I_g[i]),
-            (I_tg[ip] - I_tg[i]) - t[i]*(I_g[ip] - I_g[i])]
-
-            r =  I_g2[ip] - I_g2[i]
-
-            ℓ[i,ip] = QuadraticForm(P, q, r)
+    for i = 1:N-1
+        for ip = i+1:N
+            ℓ[i,ip] = ℓ_lazy[i,ip]
         end
     end
-
+    # T = Float64
+    # # Find primitive functions to g, t*g, and g^2
+    # # and evaluate them at the break points
+    # #I_g = polyint(g).(t)
+    # #I_g2 = polyint(g^2).(t)
+    # #I_tg = polyint(Poly([0,1]) * g).(t)
+    #
+    # N = length(t)
+    #
+    # # Find primitive functions to g, t*g, and g^2 at the break points
+    # I_g = zeros(N)
+    # I_g2 = zeros(N)
+    # I_tg = zeros(N)
+    #
+    # for i=2:N
+    #     I_g[i] = I_g[i-1] + quadgk(g, t[i-1], t[i], reltol=tol)[1]
+    #     I_g2[i] = I_g2[i-1] + quadgk(τ -> g(τ)^2, t[i-1], t[i], reltol=tol)[1]
+    #     I_tg[i] = I_tg[i-1] + quadgk(τ -> τ*g(τ), t[i-1], t[i], reltol=tol)[1]
+    # end
+    #
+    # ℓ = Array{QuadraticForm{T}}(N-1,N)
+    #
+    # for i=1:N-1
+    #     for ip=i+1:N
+    #
+    #         P = (t[ip] - t[i]) * @SMatrix [1/3 1/6; 1/6 1/3]
+    #
+    #         q = -2* 1/(t[ip]-t[i]) *
+    #         @SVector [-(I_tg[ip] - I_tg[i]) + t[ip]*(I_g[ip] - I_g[i]),
+    #         (I_tg[ip] - I_tg[i]) - t[i]*(I_g[ip] - I_g[i])]
+    #
+    #         r =  I_g2[ip] - I_g2[i]
+    #
+    #         ℓ[i,ip] = QuadraticForm(P, q, r)
+    #     end
+    # end
+    # TODO move/add tests to Lazy, maybe only i to i+1
     for i = 1:N-1, ip = i+1:N
         P, q, r = ℓ[i,ip].P, ℓ[i,ip].q, ℓ[i,ip].r
         minval = -q⋅(P\q)/4+r
         minval < 0 && error("Transition cost is negative for some values in `compute_transition_costs`, try decreasing rtol.")
     end
+
     return ℓ
 end
 
@@ -59,53 +69,15 @@ end
 Computes the transition costs `ℓ` given a discrete
 function `g`.
 """
-function compute_discrete_transition_costs(g::AbstractArray)
+function compute_discrete_transition_costs(g::AbstractArray; t=1:length(g))
     T = Float64
-
-    N = length(g)
-
-    # Find sums of g, k*g, and g^2
-    G1 = zeros(T, N)
-    G2 = zeros(T, N)
-    G3 = zeros(T, N)
-
-    # The sums corresponding to transitioning from i to ip
-    # i.e. not including the cost at ip
-    for k=2:N
-        G1[k] = G1[k-1] + g[k-1]
-        G2[k] = G2[k-1] + (k-1)*g[k-1]
-        G3[k] = G3[k-1] + g[k-1]^2
-    end
-
-    # The P-matrices only depend on the distance d=ip-i
-    P_mats  = Vector{SMatrix{2,2,Float64,4}}(N-1)
-    P_mats[1] = @SMatrix [1.0 0; 0 0]
-    for d=2:N-1
-        off_diag_elems = sum([k*(d - k) for k=0:d-1])
-        P_mats[d] = @SMatrix [P_mats[d-1][1,1] + d^2    off_diag_elems;
-        off_diag_elems            P_mats[d-1][1,1]]
-    end
-
-    P_mats = P_mats ./ (1.0:N-1).^2 # FIXME: Why can't this be done above in the loop?
-
-    #P_invs = inv.(P_mats)
-
+    ℓ_lazy = TransitionCostDiscrete{T}(g; t=t)
+    N = length(t)
     ℓ = Array{QuadraticForm{T}}(N-1,N)
-
-    for i=1:N-1
-        for ip=i+1:N
-
-            P = P_mats[ip-i]
-
-            q = -2* 1/(ip-i) *
-            @SVector [-(G2[ip] - G2[i]) + ip*(G1[ip] - G1[i]),
-            (G2[ip] - G2[i]) - i*(G1[ip] - G1[i])]
-
-            r =  G3[ip] - G3[i]
-
-            ℓ[i,ip] = QuadraticForm(P, q, r)
+    for i = 1:N-1
+        for ip = i+1:N
+            ℓ[i,ip] = ℓ_lazy[i,ip]
         end
     end
-
     return ℓ
 end
