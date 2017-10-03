@@ -463,8 +463,8 @@ function regularize{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial
                 # c_y(.) = ℓ[i_guess, i](y_guess, .)
                 c_y = QuadraticPolynomial(c_ℓ.P[4],
                         2*y_guess*c_ℓ.P[2] + c_ℓ.q[2],
-                        y_guess^2*c_ℓ.P[1] + c_ℓ.q[1]*y_guess + c_ℓ.r + ind)
-                # return c_y(y), C - (ζ)
+                        y_guess^2*c_ℓ.P[1] + c_ℓ.q[1]*y_guess + c_ℓ.r + ind*ζ)
+                # return c_y(y), C + ζ
                 c_y, cost_guess[end] + (I_guess[ind+1] == i ? 0.0 : ζ)
             end
         end
@@ -487,14 +487,14 @@ function regularize{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial
                     Δb = ρ.b + (i == 1 ? 0.0 : upper_poly.b)
                     Δc = ρ.c + (i == 1 ? 0.0 : upper_poly.c) - upper_const
                     if Δc - Δb^2/(4*Δa) > 0 + sqrt(eps())
-                        #ρ(y) ≦ upper_const - upper_poly(y) is not true anywhere
+                        #ρ(y) ≤ upper_const - upper_poly(y) is not true anywhere
                         #don't bother inserting
-                        println("Skipping at i=$i, ip=$ip, diff=$(Δc - Δb^2/(4*Δa)), upper_const=$upper_const")
+                        #println("Skipping at i=$i, ip=$ip, diff=$(Δc - Δb^2/(4*Δa)), upper_const=$upper_const")
                         #println("Δa: $Δa, Δb=$Δb, Δc=$Δc")
                         #println("ρ= $ρ")
                         continue
                     else
-                        println("Not skipping at i=$i, ip=$ip, Δa=$Δa")
+                        #println("Not skipping at i=$i, ip=$ip, Δa=$Δa")
                     end
                 end
                 DynamicApproximations.add_quadratic!(Λ_new, ρ)
