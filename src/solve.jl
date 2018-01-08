@@ -33,7 +33,7 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
         b2_minus_4ac =  Δb^2 - 4*Δa*Δc
 
         if Δa > 0 # ρ has greater curvature, i.e., ρ is smallest in the middle if intersect
-            if b2_minus_4ac <= 0
+            if b2_minus_4ac <= accuracy
                 # Zero (or one) intersections, old quadratic is smallest, just step forward
                 DEBUG && println("No intersections, old quadratic is smallest, Δa > 0, breaking.")
                 break
@@ -75,7 +75,7 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
             end
 
         elseif Δa < 0 # ρ has lower curvature, i.e., ρ is smallest on the sides
-            if b2_minus_4ac <= 0
+            if b2_minus_4ac <= accuracy
                 # Zero (or one) roots
                 λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
             else
@@ -412,6 +412,43 @@ function  fit_pwl_constrained_internal(ℓ, cost_last, M)
     return Ivec, Yvec, fvec
 end
 
+function get_guess{T}(guess, ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T})
+    if isa(guess,Void)
+        return Inf, NaN, NaN
+    else
+        I_guess, Y_guess = guess
+        @assert I_guess[1] == 1
+        @assert I_guess[end] == size(ℓ,2)
+        #Cost guess is sum of ell from I_guess[k] to end, including end cost
+        cost = zeros(T,size(I_guess))
+        # cost is 0.0 at first pont
+        cost[end] = V_0N(Y_guess[end])
+        for k = length(I_guess)-1:-1:1
+            cost[k] = cost[k+1] +
+                ℓ[I_guess[k], I_guess[k+1]](Y_guess[k], Y_guess[k+1])
+        end
+        return cost, I_guess, Y_guess
+    end
+end
+
+function get_guess_cost(i, i_next_guess, cost_guess, ℓ, ζ, I_guess, Y_guess)
+    if i_next_guess > length(I_guess)
+        return Inf
+    end
+    i_guess = I_guess[i_next_guess]
+    y_guess = Y_guess[i_next_guess]
+    c_ℓ = ℓ[i, i_guess]
+    # c_y(.) = ℓ[i_guess, i](y_guess, .)
+    cy_a = c_ℓ.P[1]
+    cy_b = 2*y_guess*c_ℓ.P[2] + c_ℓ.q[1]
+    cy_c = y_guess^2*c_ℓ.P[4] + c_ℓ.q[2]*y_guess + c_ℓ.r + (length(I_guess)-i_next_guess+1)*ζ
+    #minimum : Δc - Δb^2/(4*Δa)
+    min_guess = cy_c-cy_b^2/(4*cy_a)
+    #The minimum cost for guess with extra breakpoint at i:
+    # min ℓ(i,ip) + rest of cost from ip
+    min_guess += cost_guess[i_next_guess]
+    return min_guess
+end
 """
 Solves the regularization problem
 minimzie ∫ (g - y)^2 dt + ζ⋅card(d^2/dt^2 y)
@@ -420,83 +457,72 @@ function regularize{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial
     N = size(ℓ, 2)
 
     # Used if guess is provided
-    cost_guess, I_guess, Y_guess =
-    if isa(guess,Void)
-        Inf, NaN, NaN
-    else
-        I_guess, Y_guess = guess
-        @assert I_guess[1] == 1
-        @assert I_guess[end] == N
-        cost_guess = zeros(T,size(I_guess))
-        # cost is 0.0 at first pont
-        cost_guess[1] = 0.0
-        for k = 1:length(I_guess)-1
-            cost_guess[k+1] = cost_guess[k] + ζ +
-                ℓ[I_guess[k], I_guess[k+1]](Y_guess[k], Y_guess[k+1])
-        end
-        cost_guess[end] += V_0N(Y_guess[end])
-        cost_guess, I_guess, Y_guess
-    end
+    cost_guess, I_guess, Y_guess = get_guess(guess, ℓ, V_0N)
 
+    #println("cost_guess: $cost_guess")
     Λ = Vector{PiecewiseQuadratic{T}}(N)
+    Λ_min = Vector{Float64}(N)
 
     V_0N = deepcopy(V_0N)
     V_0N.time_index = -1
     Λ[N] = create_new_pwq(V_0N)
+    Λ_min[N] = find_minimum(V_0N)[2]
 
     ρ = QuadraticPolynomial{T}()
-
+    nskip = 0
     for i=N-1:-1:1
         Λ_new = create_new_pwq()
         # Following only used with guesses
-        upper_poly, upper_const =
-        if isa(guess,Void)
-            NaN, NaN
-        else
-            if i == 1
-                QuadraticPolynomial(NaN, NaN, NaN), cost_guess[end]
-            else
-                ind = findlast(I_guess .< i)
-                i_guess = I_guess[ind]
-                y_guess = Y_guess[ind]
-                c_ℓ = ℓ[i_guess, i]
-                # c_y(.) = ℓ[i_guess, i](y_guess, .)
-                c_y = QuadraticPolynomial(c_ℓ.P[4],
-                        2*y_guess*c_ℓ.P[2] + c_ℓ.q[2],
-                        y_guess^2*c_ℓ.P[1] + c_ℓ.q[1]*y_guess + c_ℓ.r + ind*ζ)
-                # return c_y(y), C + ζ
-                c_y, cost_guess[end] + (I_guess[ind+1] == i ? 0.0 : ζ)
-            end
+        min_guess = Inf
+        if !isa(guess,Void)
+            ind_next = findfirst(v -> v > i, I_guess)
+            min_guess  = get_guess_cost(i, ind_next  , cost_guess, ℓ, ζ, I_guess, Y_guess)
+            min_guess2 = get_guess_cost(i, ind_next+1, cost_guess, ℓ, ζ, I_guess, Y_guess)
+            #min_guess > min_guess2 && println("$min_guess, $min_guess2")
+            min_guess = min(min_guess, min_guess2)
         end
-
+        ddebug = (i == 2791)
         for ip=i+1:N
-
-
             ζ_level_insertion = false
+            ℓiip = ℓ[i,ip]
+
+            # Early check if guess exists
+            if !isa(guess,Void)
+                min_possible = find_minimum_value(ℓiip) + Λ_min[ip] + ζ
+                #TODO more exact than 10sqrt(sqrt(eps()))
+                if min_possible > min_guess + 10*sqrt(sqrt(eps()))
+                    nskip += 1
+                    #ddebug && print("skip $i,$ip ")
+                    #ddebug && println("min_pos: $(find_minimum_value(ℓiip)) + $(Λ_min[ip]) + $ζ > $min_guess")
+                    continue
+                else
+                    #println("Not skipping at i=$i, ip=$ip, Δa=$Δa")
+                    #ddebug && print("Not skip $i,$ip ")
+                    #ddebug && println("min_pos: $(find_minimum_value(ℓiip)) + $(Λ_min[ip]) + $ζ < $min_guess")
+                end
+            end
+            ddebug = if i == 214 && ip == 215
+                true
+            else
+                false
+            end
+
+            #ddebug && println(Λ[ip])
+            #ddebug && sleep(10)
+            counter = 0
             for λ in Λ[ip]
+                counter += 1
+                if counter == 10 && ddebug
+                    #return Λ
+                end
                 p = λ.p
                 #counter1 += 1
-
-                DynamicApproximations.minimize_wrt_x2(ℓ[i,ip], p, ρ)
+                #ddebug && println("Λ[ip]: $(Λ[ip])")
+                #ddebug && println("p: $p")
+                #ddebug && println("counter: $counter, length: $(length(Λ_new))")
+                DynamicApproximations.minimize_wrt_x2(ℓiip, p, ρ)
                 ρ.c += ζ # add cost for break point
 
-                # Early check if guess exists
-                if !isa(guess,Void)
-                    #check if ρ(y) ≤ upper_const - upper_poly(y) anywhere
-                    Δa = ρ.a + (i == 1 ? 0.0 : upper_poly.a)
-                    Δb = ρ.b + (i == 1 ? 0.0 : upper_poly.b)
-                    Δc = ρ.c + (i == 1 ? 0.0 : upper_poly.c) - upper_const
-                    if Δc - Δb^2/(4*Δa) > 0 + sqrt(eps())
-                        #ρ(y) ≤ upper_const - upper_poly(y) is not true anywhere
-                        #don't bother inserting
-                        #println("Skipping at i=$i, ip=$ip, diff=$(Δc - Δb^2/(4*Δa)), upper_const=$upper_const")
-                        #println("Δa: $Δa, Δb=$Δb, Δc=$Δc")
-                        #println("ρ= $ρ")
-                        continue
-                    else
-                        #println("Not skipping at i=$i, ip=$ip, Δa=$Δa")
-                    end
-                end
                 DynamicApproximations.add_quadratic!(Λ_new, ρ)
 
 
@@ -524,8 +550,9 @@ function regularize{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial
             end
         end
         Λ[i] = Λ_new
+        Λ_min[i] = find_minimum_value(Λ_new)
     end
-
+    println("Nskip: $nskip")
     return Λ
 end
 
