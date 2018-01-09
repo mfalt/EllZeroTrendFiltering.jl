@@ -15,8 +15,8 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
         return
     end
 
-    λ_prev = Λ
-    λ_curr = Λ.next
+    λ_prev = Λ # Points to the list head which is just a node with NaN data
+    λ_curr = Λ.next # The leftmost segment of the list
 
     while λ_curr.left_endpoint != Inf #???
         #global counter2 += 1
@@ -48,25 +48,23 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
 
                 # Check where the intersections are and act accordingly
                 if root1 >= right_endpoint
-                    DEBUG && println("Two intersections to the right")
+                    DEBUG && println("Two intersections to the right: old quadratic is smallest")
                     λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
                 elseif root2 <= left_endpoint
-                    # No intersections, old quadratic is smallest, step forward
-                    DEBUG && println("Two intersections to the left")
+                    DEBUG && println("Two intersections to the left: old quadratic is smallest")
                     break # There will be no more intersections since Δa > 0
-                elseif root1 <= left_endpoint && root2 >= right_endpoint
-                    # No intersections, new quadratic is smallest
-                    DEBUG && println("One intersections on either side")
+                elseif root1 <= λ_a && root2 >= λ_b
+                    DEBUG && println("One intersections on either side, new quadratic is smallest")
                     λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
                 elseif root1 > left_endpoint && root2 < right_endpoint
-                    DEBUG && println("Two intersections within the interval")
+                    DEBUG && println("Two intersections: old-new-old")
                     λ_prev, λ_curr = update_segment_old_new_old(λ_curr, ρ, root1, root2)
                     break # There will be no more intersections since Δa > 0
                 elseif root1 > left_endpoint
-                    DEBUG && println("Root 1 within the interval")
+                    DEBUG && println("Root 1 within the interval: old-new")
                     λ_prev, λ_curr = update_segment_old_new(λ_curr, ρ, root1)
                 elseif root2 < right_endpoint
-                    DEBUG && println("Root 2 within the interval")
+                    DEBUG && println("Root 2 within the interval: new-old")
                     λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, ρ, root2)
                     break # There will be no more intersections since Δa > 0
                 else
@@ -156,34 +154,34 @@ end
     return v1, v2
 end
 
-@inline function update_segment_old_new(λ_curr, ρ, break1)
+@inline function update_segment_old_new(λ_curr, ρ, root)
     ρ.has_been_used = true
-    new_pwq_segment =  PiecewiseQuadratic(ρ, break1, λ_curr.next)
+    new_pwq_segment =  PiecewiseQuadratic(ρ, root, λ_curr.next)
     λ_curr.next = new_pwq_segment
     return new_pwq_segment, new_pwq_segment.next
 end
 
-@inline function update_segment_new_old(λ_prev, λ_curr, ρ, break1)
+@inline function update_segment_new_old(λ_prev, λ_curr, ρ, root)
     if λ_prev.p === ρ
-        λ_curr.left_endpoint = break1
+        λ_curr.left_endpoint = root
     else
         ρ.has_been_used = true
         λ_prev.next = PiecewiseQuadratic(ρ, λ_curr.left_endpoint, λ_curr)
-        λ_curr.left_endpoint = break1
+        λ_curr.left_endpoint = root
     end
     return λ_curr, λ_curr.next
 end
 
-@inline function update_segment_new_old_new(λ_prev, λ_curr, ρ, break1, break2)
+@inline function update_segment_new_old_new(λ_prev, λ_curr, ρ, root1, root2)
     ρ.has_been_used = true
-    update_segment_new_old(λ_prev, λ_curr, ρ, break1)
-    return update_segment_old_new(λ_curr, ρ, break2)
+    update_segment_new_old(λ_prev, λ_curr, ρ, root1)
+    return update_segment_old_new(λ_curr, ρ, root2)
 end
 
-@inline function update_segment_old_new_old(λ_curr, ρ, break1, break2)
+@inline function update_segment_old_new_old(λ_curr, ρ, root1, root2)
     ρ.has_been_used = true
-    second_old_pwq_segment =  PiecewiseQuadratic(λ_curr.p, break2, λ_curr.next)
-    new_pwq_segment =  PiecewiseQuadratic(ρ, break1, second_old_pwq_segment)
+    second_old_pwq_segment =  PiecewiseQuadratic(λ_curr.p, root2, λ_curr.next)
+    new_pwq_segment =  PiecewiseQuadratic(ρ, root1, second_old_pwq_segment)
     λ_curr.next = new_pwq_segment
     return second_old_pwq_segment, second_old_pwq_segment.next
 end
@@ -205,18 +203,14 @@ The input `ρ` can be pre-allocated on input and will then be changed.
 
     if P22_new > 0
         ρ.a = P[1,1] - P[1,2]^2 / P22_new
-        ρ.b = q[1] - P[1,2]*(q[2]+p.b) / P22_new
-        ρ.c = (r+p.c) - (q[2]+p.b)^2 / P22_new / 4
-    elseif P22_new == 0 #|| qf.P11 == 0 || (qf.q2+p.b) == 0 #why are the two last conditions needed?
+        ρ.b = q[1] - P[1,2]*(q[2] + p.b) / P22_new
+        ρ.c = (r+p.c) - (q[2] + p.b)^2 / P22_new / 4
+    elseif P22_new == 0
         ρ.a = P[1,1]
         ρ.b = q[1]
-        ρ.c = r+p.c
+        ρ.c = r + p.c
     else
-        # FIXME: what are these condtions?
-        # There are some special cases, but disregards these
-        ρ.a = 0.0
-        ρ.b = 0.0
-        ρ.c = 0.0
+        error("Piecewise quadratic cost should be positive (semi-)definite. Please submit a bug report.")
     end
     return ρ
 end
@@ -308,63 +302,7 @@ function find_optimal_fit{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPoly
     return Λ
 end
 
-function  fit_pwl_reguralized(g::AbstractArray, ζ; lazy=true)
-    ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
-               compute_discrete_transition_costs(g)
-    # Discrete case, so cost at endpoint is quadratic
-    cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
-    fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
-end
 
-function  fit_pwl_reguralized(g, t, ζ, tol=1e-3; lazy=true)
-    ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
-               compute_transition_costs(g, t, tol)
-    # Continouous case, no cost at endpoint
-    cost_last = zero(QuadraticPolynomial{Float64})
-    fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
-end
-
-function  fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
-    Λ_reg = regularize(ℓ, cost_last, ζ)
-    #Get solution that starts at first index
-    I, _, f_reg = recover_optimal_index_set(Λ_reg[1])
-    Y, f = find_optimal_y_values(ℓ, cost_last, I)
-    return I, Y, f
-end
-
-
-# recover_optimal_index_set returns the cost inclusive the regularization penality,
-# revober optimal solution does not do so. It is arguably more interesting
-# to test cost including regularization.
-
-
-function  fit_pwl_constrained(g::AbstractArray, M; lazy=false)
-    ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
-               compute_discrete_transition_costs(g)
-    cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
-    fit_pwl_constrained_internal(ℓ, cost_last, M)
-end
-
-function  fit_pwl_constrained(g, t, M, tol=1e-3; lazy=false)
-    ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
-               compute_transition_costs(g, t, tol)
-    cost_last = zero(QuadraticPolynomial{Float64})
-    fit_pwl_constrained_internal(ℓ, cost_last, M)
-end
-
-function  fit_pwl_constrained_internal(ℓ, cost_last, M)
-    Λ = find_optimal_fit(ℓ, cost_last, M);
-
-    Ivec = Vector{Vector{Int}}(M)
-    Yvec = Vector{Vector{Float64}}(M)
-    fvec = Vector{Float64}(M)
-
-    for m=1:M
-        Ivec[m], Yvec[m], fvec[m] = recover_solution(Λ[m, 1], ℓ, cost_last)
-    end
-
-    return Ivec, Yvec, fvec
-end
 
 """
 Solves the regularization problem
@@ -397,14 +335,6 @@ function regularize{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial
 
                 add_quadratic!(Λ_new, ρ)
 
-
-                if ζ_level_insertion == false
-                    if !poly_minus_constant_is_greater(Λ_new, ρ, ζ)
-                        ζ_level_insertion = true
-                    end
-                end
-
-
                 if ρ.has_been_used
                     ρ.time_index = ip
                     ρ.ancestor = p
@@ -413,7 +343,11 @@ function regularize{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial
 
                     ζ_level_insertion = true
                 else
-                    #@assert test_quadratic(Λ_new, ρ, 0) == false
+                    if ζ_level_insertion == false
+                        if !poly_minus_constant_is_greater(Λ_new, ρ, ζ)
+                            ζ_level_insertion = true
+                        end
+                    end
                 end
             end
 
@@ -499,49 +433,6 @@ function recover_solution(Λ::PiecewiseQuadratic, ℓ, V_0N::QuadraticPolynomial
     return I, Y, f
 end
 
-"""
-Evaluate the optimal cost (using least squares) for all
-possible index sets with m segemets
-"""
-function brute_force_optimization(ℓ, V_0N::QuadraticPolynomial, m::Integer)
-    cost_best = Inf
-
-    I_best = []
-    Y_best = []
-
-    N = size(ℓ, 2)
-
-    for I=IterTools.subsets(2:N-1, m-1)
-
-        I = [1; I; N]
-        P = zeros(m+1, m+1)
-        q = zeros(m+1)
-        r = 0
-
-        # Add cost at right endpoint
-        P[end,end] = V_0N.a
-        q[end]     = V_0N.b
-        r          = V_0N.c
-        # Form quadratic cost function Y'*P*Y + q'*Y + r
-        # corresponding to the y-values in the vector Y
-        for j=1:m
-            P[j:j+1,j:j+1] .+= ℓ[I[j], I[j+1]].P
-            q[j:j+1] .+= ℓ[I[j], I[j+1]].q
-            r += ℓ[I[j], I[j+1]].r
-        end
-
-        # find the optimal Y-vector, and compute the correspinding error
-        Yopt = -(P \ q) / 2
-        cost = Yopt' * P * Yopt + q' * Yopt + r
-
-        if cost < cost_best
-            cost_best = cost
-            Y_best = Yopt
-            I_best = I
-        end
-    end
-    return I_best, Y_best, cost_best
-end
 
 
 
@@ -604,8 +495,7 @@ function poly_minus_constant_is_greater{T}(Λ::PiecewiseQuadratic{T}, ρ::Quadra
 
                 # Check where the intersections are and act accordingly
                 if root1 <= left_endpoint && root2 >= right_endpoint
-                    # One intersection on either side of the interval,
-                    # old quadratic is smallest, just step forward
+                    # No intersection on either side of the interval, and ρ is smallest
                     continue
                 else
                     return false
@@ -645,4 +535,66 @@ function poly_minus_constant_is_greater{T}(Λ::PiecewiseQuadratic{T}, ρ::Quadra
 
     end
     return true
+end
+
+
+
+## Convenience function
+
+
+# Time-series
+function  fit_pwl_reguralized(g::AbstractArray, ζ; lazy=true)
+    ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
+               compute_discrete_transition_costs(g)
+    # Discrete case, so cost at endpoint is quadratic
+    cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
+    fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
+end
+
+# Continuous function
+function  fit_pwl_reguralized(g, t, ζ, tol=1e-3; lazy=true)
+    ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
+               compute_transition_costs(g, t, tol)
+    # Continouous case, no cost at endpoint
+    cost_last = zero(QuadraticPolynomial{Float64})
+    fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
+end
+
+function  fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
+    Λ_reg = regularize(ℓ, cost_last, ζ)
+    #Get solution that starts at first index
+    I, _, f_reg = recover_optimal_index_set(Λ_reg[1])
+    Y, f = find_optimal_y_values(ℓ, cost_last, I)
+    return I, Y, f
+end
+
+
+# Time-series
+function  fit_pwl_constrained(g::AbstractArray, M; lazy=false)
+    ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
+               compute_discrete_transition_costs(g)
+    cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
+    fit_pwl_constrained_internal(ℓ, cost_last, M)
+end
+
+# Continuous function
+function  fit_pwl_constrained(g, t, M, tol=1e-3; lazy=false)
+    ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
+               compute_transition_costs(g, t, tol)
+    cost_last = zero(QuadraticPolynomial{Float64})
+    fit_pwl_constrained_internal(ℓ, cost_last, M)
+end
+
+function  fit_pwl_constrained_internal(ℓ, cost_last, M)
+    Λ = find_optimal_fit(ℓ, cost_last, M);
+
+    Ivec = Vector{Vector{Int}}(M)
+    Yvec = Vector{Vector{Float64}}(M)
+    fvec = Vector{Float64}(M)
+
+    for m=1:M
+        Ivec[m], Yvec[m], fvec[m] = recover_solution(Λ[m, 1], ℓ, cost_last)
+    end
+
+    return Ivec, Yvec, fvec
 end

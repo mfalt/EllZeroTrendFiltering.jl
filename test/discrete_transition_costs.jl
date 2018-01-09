@@ -23,7 +23,7 @@ g = sin.(t)
 ℓ = compute_discrete_transition_costs(g)
 
 ## Test 1a
-I1 = [1,10,30,40,50]
+I = [1,10,30,40,50]
 Y1 = g[I1]
 
 y1 = interpolate((I1,), Y1, Gridded(Linear()))[1:length(g)]
@@ -39,9 +39,7 @@ y2 = interpolate((t[I2],), Y2, Gridded(Linear()))[t]
 
 @test compute_cost(ℓ,I2,Y2) ≈ sum((y2[1:end-1]-g[1:end-1]).^2)
 
-#plot(t, sin.(t))
-#plot!(t[I1], Y1)
-#plot!(t, y1, color="red")
+
 
 
 ## Test 2

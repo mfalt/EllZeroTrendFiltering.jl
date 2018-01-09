@@ -1,5 +1,4 @@
 
-# TODO Maybe use big T for time indices, howabout mathcal{T}
 """
     ℓ = compute_transition_costs(g, t::AbstractArray)
 Computes the transition costs `ℓ` given a

@@ -1,15 +1,13 @@
-abstract type AbstractTransitionCostLazy{T} end
+abstract type AbstractTransitionCost{T} end
 
-struct TransitionCostContinuous{T,FT,TT<:AbstractArray} <: AbstractTransitionCostLazy{T}
-    g::FT
-    t::TT
+struct TransitionCostContinuous{T} <: AbstractTransitionCost{T}
     I_g::Vector{Float64}
     I_g2::Vector{Float64}
     I_tg::Vector{Float64}
-    tol::Float64
 end
 
-function TransitionCostContinuous{T}(g::FT,t::TT, tol=1e-3) where {T,FT,TT}
+
+function TransitionCostContinuous{T}(g, t::AbstractVector, tol=1e-3) where {T}
     N = length(t)
     I_g =  zeros(N)
     I_g2 = zeros(N)
@@ -37,11 +35,14 @@ function getindex(tc::TransitionCostContinuous, i::Integer, ip::Integer)
     return QuadraticForm(P, q, r)
 end
 
+# Test non-uniform sampling
+
 #Discrete case
 
-struct TransitionCostDiscrete{T, FT<:AbstractArray} <: AbstractTransitionCostLazy{T}
-    g::FT
-    P_mats::Vector{SMatrix{2,2,Float64,4}}
+# non-uniform sampling needs to be handled
+
+struct TransitionCostDiscrete{T} <: AbstractTransitionCost{T}
+    P_matrices::Vector{SMatrix{2,2,Float64,4}}
     G1::Vector{T}
     G2::Vector{T}
     G3::Vector{T}
@@ -74,7 +75,7 @@ function TransitionCostDiscrete{T}(g::FT) where {T,FT}
         off_diag_elems            P_mats[d-1][1,1]]
     end
 
-    P_mats = P_mats ./ (1.0:N-1).^2 # FIXME:
+    P_mats = P_mats ./ (1.0:N-1).^2 # FIXME: Det var något problem här...
     TransitionCostDiscrete{T,FT}(g, P_mats, G1, G2, G3)
 end
 
@@ -86,7 +87,7 @@ function getindex(tc::TransitionCostDiscrete, i::Integer, ip::Integer)
 
     r =  tc.G3[ip] - tc.G3[i]
 
-    return QuadraticForm(tc.P_mats[ip-i], q, r)
+    return QuadraticForm(tc.P_matrices[ip-i], q, r)
 end
 
-Base.size(tc::AbstractTransitionCostLazy, i::Integer) = size(tc)[i]
+Base.size(tc::AbstractTransitionCost, i::Integer) = size(tc)[i]
