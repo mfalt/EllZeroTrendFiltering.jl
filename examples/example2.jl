@@ -23,7 +23,7 @@ cost_last = DA.QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
 
 start_time = time()
 gc()
-@time Λ = DA.find_optimal_fit(ℓ, cost_last, 10, 1.65);
+@time Λ = DA.pwq_dp_constrained(ℓ, cost_last, 10, 1.65);
 println("Time: ", time()-start_time)
 
 #println(counter1, " ", counter2)

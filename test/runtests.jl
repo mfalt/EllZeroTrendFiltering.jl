@@ -7,7 +7,7 @@ tests = [
     "piecewise_quadratics.jl",
     "transition_costs.jl",
     "discrete_transition_costs.jl",
-    "find_optimal_fit.jl",
+    "pwq_dp_constrained.jl",
     "test_discrete_fit.jl",
     "examples.jl"]
 

@@ -6,7 +6,7 @@ g = sin
 @time ℓ = compute_transition_costs(g, t);
 cost_last = QuadraticPolynomial(0.0, 0.0, 0.0)
 
-@time Λ = find_optimal_fit(ℓ, cost_last, 7);
+@time Λ =  pwq_dp_constrained(ℓ, cost_last, 7);
 
 I_sols = [      [[1, 50]],
                 [[1, 34, 50], [1, 17, 50]],
@@ -38,7 +38,7 @@ end
 
 @testset "Regularize ζ=$ζ" for ζ in 0.1:0.1:2
 
-    Λ_reg = regularize(ℓ, cost_last, ζ)
+    Λ_reg = pwq_dp_regularized(ℓ, cost_last, ζ)
 
     # recover_optimal_index_set returns the cost inclusive the regularization penality,
     # revober optimal solution does not do so. It is arguably more interesting

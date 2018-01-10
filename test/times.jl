@@ -14,9 +14,9 @@ data2 = data[1:N]
 ζ = 1.
 ℓ = compute_discrete_transition_costs(data2);
 cost_last = QuadraticPolynomial(1.0, -2*data[N], data[N]^2)
-@time Λ = find_optimal_fit(ℓ, cost_last, M, 1.3);
+@time Λ = pwq_dp_constrained(ℓ, cost_last, M, 1.3);
 I, _, f = recover_solution(Λ[M, 1], ℓ, cost_last)
-#@time Λ_reg = regularize(ℓ, cost_last, ζ, 7.1)
+#@time Λ_reg = pwq_dp_regularized(ℓ, cost_last, ζ, 7.1)
 I, _, f_reg = recover_optimal_index_set(Λ_reg[1])
 find_minimum(Λ_reg[1])
 lengths3 = [(isassigned(Λ, i, j) ? length(Λ[i,j]) : 0) for i = 1:size(Λ,1), j = 1:size(Λ,2)]
@@ -29,7 +29,7 @@ for (i,N) in enumerate(Ns)
     gc()
     @time ℓ = compute_discrete_transition_costs(data2);
     cost_last = QuadraticPolynomial(1.0, -2*data[N], data[N]^2)
-    Λ_reg, t, _, _, _ = @timed regularize(ℓ, cost_last, ζ, 7.03)
+    Λ_reg, t, _, _, _ = @timed pwq_dp_regularized(ℓ, cost_last, ζ, 7.03)
     times[i] = t
 end
 (i,N) = 1, 2000

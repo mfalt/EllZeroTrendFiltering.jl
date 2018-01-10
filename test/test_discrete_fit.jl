@@ -19,7 +19,7 @@ for problem_fcn in [straight_line_problem, square_wave_problem, exp_problem, snp
     @time ℓ = compute_discrete_transition_costs(g);
     cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
 
-    Λ = find_optimal_fit(ℓ, cost_last, M, Inf);
+    Λ = pwq_dp_constrained(ℓ, cost_last, M, Inf);
 
     @testset "Data set: $problem_fcn, constrained with m=$m" for m in 1:M
         I, Y, f = recover_solution(Λ[m, 1], ℓ, cost_last)
@@ -49,7 +49,7 @@ for problem_fcn in [straight_line_problem, square_wave_problem, exp_problem, snp
     #ζvec = [100, 30, 10, 3, 1, 0.3, 0.1, 0.03, 0.01]
     @testset "Data set: $problem_fcn, regularization with ζ=$ζ" for ζ in ζvec
 
-        Λ_reg = regularize(ℓ, cost_last, ζ)
+        Λ_reg = pwq_dp_regularized(ℓ, cost_last, ζ)
 
         # the cost f returned from recover_optimal_index_set includes the
         # regularization penality mζ

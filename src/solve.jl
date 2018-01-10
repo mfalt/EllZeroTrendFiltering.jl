@@ -227,7 +227,7 @@ global counter1
 global counter2
 
 """
-    Λ = find_optimal_fit(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf) where {T}
+    Λ = pwq_dp_constrained(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf) where {T}
 
 Given the transition costs `ℓ[i,j](y_i,y_j)` and the cost at the endpoint `V_0N(y_N)` find all solutions `f` with up to `M` segments for the problem
 
@@ -236,7 +236,7 @@ s.t          f(k) being continuous piecewise linear with `m` segements.
 
 i.e. `Λ[m,i]` contains the best (in `ℓ` cost) continuous piecewise linear function `f` with up to `M` segments over the interval `i` to `N`
 """
-function find_optimal_fit{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf)
+function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf)
     #global counter1
     #global counter2
     #counter1 = 0
@@ -310,10 +310,15 @@ end
 
 
 """
-Solves the regularization problem
-minimzie ∫ (g - y)^2 dt + ζ⋅card(d^2/dt^2 y)
+Finds the set I=(i_1, ..., i_M) that is the solution to the regularization problem
+
+minimize ∑ ℓ_(i, i+1)(y, y+1)  +  V_N(y_M)  +  ζ⋅card(I)
+
+where ℓ are positive-definite quadratic forms.
+
+Actually it computes cost to go functions V_(i,m), with
 """
-function regularize{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, ζ::T)
+function pwq_dp_regularized{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, ζ::T)
     N = size(ℓ, 2)
 
     Λ = Vector{PiecewiseQuadratic{T}}(N)
@@ -566,7 +571,7 @@ function  fit_pwl_reguralized(g, t, ζ, tol=1e-3; lazy=true)
 end
 
 function  fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
-    Λ_reg = regularize(ℓ, cost_last, ζ)
+    Λ_reg = pwq_dp_regularized(ℓ, cost_last, ζ)
     #Get solution that starts at first index
     I, _, f_reg = recover_optimal_index_set(Λ_reg[1])
     Y, f = find_optimal_y_values(ℓ, cost_last, I)
@@ -591,7 +596,7 @@ function  fit_pwl_constrained(g, t, M, tol=1e-3; lazy=false)
 end
 
 function  fit_pwl_constrained_internal(ℓ, cost_last, M)
-    Λ = find_optimal_fit(ℓ, cost_last, M);
+    Λ = pwq_dp_constrained(ℓ, cost_last, M);
 
     Ivec = Vector{Vector{Int}}(M)
     Yvec = Vector{Vector{Float64}}(M)
