@@ -9,6 +9,7 @@ tests = [
     "discrete_transition_costs.jl",
     "find_optimal_fit.jl",
     "test_discrete_fit.jl",
+    "exact_tests.jl",
     "examples.jl"]
 
 @testset "All Tests" begin
