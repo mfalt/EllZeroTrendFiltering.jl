@@ -33,7 +33,7 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
         b2_minus_4ac =  Δb^2 - 4*Δa*Δc
 
         if Δa > 0 # ρ has greater curvature, i.e., ρ is smallest in the middle if intersect
-            if b2_minus_4ac <= 0
+            if b2_minus_4ac <= accuracy
                 # Zero (or one) intersections, old quadratic is smallest, just step forward
                 DEBUG && println("No intersections, old quadratic is smallest, Δa > 0, breaking.")
                 break
@@ -75,7 +75,7 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
             end
 
         elseif Δa < 0 # ρ has lower curvature, i.e., ρ is smallest on the sides
-            if b2_minus_4ac <= 0
+            if b2_minus_4ac <= accuracy
                 # Zero (or one) roots
                 λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
             else
@@ -308,24 +308,47 @@ function find_optimal_fit{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPoly
     return Λ
 end
 
-function  fit_pwl_reguralized(g::AbstractArray, ζ; lazy=true)
-    ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
-               compute_discrete_transition_costs(g)
+"""
+    I, Y, v = fit_pwl_reguralized(g::AbstractArray, ζ; t=1:length(g), lazy=true)
+    I, Y, v = fit_pwl_reguralized(g, t, ζ, tol=1e-3; lazy=true)
+
+Approximate `g[k]` (or `g(t)`) with a continuous piecewise linear function `f` according to
+    v = min_f `||f-g||₂^2 + ζ⋅(length(I)-2)`
+where the norm is `sum((f[k]-g[k])²)` (or integral over `(f(t)-g(t))²` from `t[1]` to `t[end]`).
+
+Returns:
+    `I`: Vector of length `M`
+    `Y`: Vector of length `M`
+    `v`: Float64
+such that the optimal function has breakpoints in `I` (or `t[I]`) and satisfies
+`f(I) .= Y` (or `f(t[I]) .= Y`).
+
+Kwargs:
+`t` is optional parameter in the discrete case, restricting the set of possible gridpoints,
+i.e. so that `f[t[I]] .= Y`.
+
+`lazy` = true, means that the internal transition costs `ℓ[i,j]` will be calculated when needed.
+
+`tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
+"""
+function  fit_pwl_reguralized(g::AbstractArray, ζ; t=1:length(g), lazy=true, guess=nothing)
+    ℓ = lazy ? TransitionCostDiscrete{Float64}(g, t=t) :
+               compute_discrete_transition_costs(g, t=t)
     # Discrete case, so cost at endpoint is quadratic
     cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
-    fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
+    fit_pwl_reguralized_internal(ℓ, cost_last, ζ, guess=guess)
 end
 
-function  fit_pwl_reguralized(g, t, ζ, tol=1e-3; lazy=true)
+function  fit_pwl_reguralized(g, t, ζ, tol=1e-3; lazy=true, guess=nothing)
     ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
                compute_transition_costs(g, t, tol)
     # Continouous case, no cost at endpoint
     cost_last = zero(QuadraticPolynomial{Float64})
-    fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
+    fit_pwl_reguralized_internal(ℓ, cost_last, ζ, guess=guess)
 end
 
-function  fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
-    Λ_reg = regularize(ℓ, cost_last, ζ)
+function  fit_pwl_reguralized_internal(ℓ, cost_last, ζ; guess=nothing)
+    Λ_reg = regularize(ℓ, cost_last, ζ, guess=guess)
     #Get solution that starts at first index
     I, _, f_reg = recover_optimal_index_set(Λ_reg[1])
     Y, f = find_optimal_y_values(ℓ, cost_last, I)
@@ -337,10 +360,33 @@ end
 # revober optimal solution does not do so. It is arguably more interesting
 # to test cost including regularization.
 
+"""
+    I, Y, v = fit_pwl_constrained(g::AbstractArray, M; t=1:length(g), lazy=true)
+    I, Y, v = fit_pwl_constrained(g, t, M, tol=1e-3; lazy=true)
 
-function  fit_pwl_constrained(g::AbstractArray, M; lazy=false)
-    ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
-               compute_discrete_transition_costs(g)
+Approximate `g[k]` (or `g(t)`) with a continuous piecewise linear function `f` according to
+    v = min_f `||f-g||₂^2`
+    s.t. length(I)-2 = M
+where the norm is `sum((f[k]-g[k])²)` (or integral over `(f(t)-g(t))²` from `t[1]` to `t[end]`).
+
+Returns:
+    `I`: Vector of length `M`
+    `Y`: Vector of length `M`
+    `v`: Float64
+such that the optimal function has breakpoints in `I` (or `t[I]`) and satisfies
+`f(I) .= Y` (or `f(t[I]) .= Y`).
+
+Kwargs:
+`t` is optional parameter in the discrete case, restricting the set of possible gridpoints,
+i.e. so that `f[grid[I]] .= Y`.
+
+`lazy` = true, means that the internal transition costs `ℓ[i,j]` will be calculated when needed.
+
+`tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
+"""
+function  fit_pwl_constrained(g::AbstractArray, M::Integer; t=1:length(g), lazy=false)
+    ℓ = lazy ? TransitionCostDiscrete{Float64}(g, t=t) :
+               compute_discrete_transition_costs(g, t=t)
     cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
     fit_pwl_constrained_internal(ℓ, cost_last, M)
 end
@@ -366,40 +412,122 @@ function  fit_pwl_constrained_internal(ℓ, cost_last, M)
     return Ivec, Yvec, fvec
 end
 
+function get_guess{T}(guess, ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T})
+    if isa(guess,Void)
+        return Inf, NaN, NaN
+    else
+        I_guess, Y_guess = guess
+        @assert I_guess[1] == 1
+        @assert I_guess[end] == size(ℓ,2)
+        #Cost guess is sum of ell from I_guess[k] to end, including end cost
+        cost = zeros(T,size(I_guess))
+        # cost is 0.0 at first pont
+        cost[end] = V_0N(Y_guess[end])
+        for k = length(I_guess)-1:-1:1
+            cost[k] = cost[k+1] +
+                ℓ[I_guess[k], I_guess[k+1]](Y_guess[k], Y_guess[k+1])
+        end
+        return cost, I_guess, Y_guess
+    end
+end
+
+function get_guess_cost(i, i_next_guess, cost_guess, ℓ, ζ, I_guess, Y_guess)
+    if i_next_guess > length(I_guess)
+        return Inf
+    end
+    i_guess = I_guess[i_next_guess]
+    y_guess = Y_guess[i_next_guess]
+    c_ℓ = ℓ[i, i_guess]
+    # c_y(.) = ℓ[i_guess, i](y_guess, .)
+    cy_a = c_ℓ.P[1]
+    cy_b = 2*y_guess*c_ℓ.P[2] + c_ℓ.q[1]
+    cy_c = y_guess^2*c_ℓ.P[4] + c_ℓ.q[2]*y_guess + c_ℓ.r + (length(I_guess)-i_next_guess+1)*ζ
+    #minimum : Δc - Δb^2/(4*Δa)
+    min_guess = cy_c-cy_b^2/(4*cy_a)
+    #The minimum cost for guess with extra breakpoint at i:
+    # min ℓ(i,ip) + rest of cost from ip
+    min_guess += cost_guess[i_next_guess]
+    return min_guess
+end
 """
 Solves the regularization problem
 minimzie ∫ (g - y)^2 dt + ζ⋅card(d^2/dt^2 y)
 """
-function regularize{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, ζ::T)
+function regularize{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, ζ::T; guess=nothing)
     N = size(ℓ, 2)
 
+    # Used if guess is provided
+    cost_guess, I_guess, Y_guess = get_guess(guess, ℓ, V_0N)
+
+    #println("cost_guess: $cost_guess")
     Λ = Vector{PiecewiseQuadratic{T}}(N)
+    Λ_min = Vector{Float64}(N)
 
     V_0N = deepcopy(V_0N)
     V_0N.time_index = -1
     Λ[N] = create_new_pwq(V_0N)
+    Λ_min[N] = find_minimum(V_0N)[2]
 
     ρ = QuadraticPolynomial{T}()
-
+    nskip = 0
     for i=N-1:-1:1
         Λ_new = create_new_pwq()
+        # Following only used with guesses
+        min_guess = Inf
+        if !isa(guess,Void)
+            ind_next = findfirst(v -> v > i, I_guess)
+            min_guess  = get_guess_cost(i, ind_next  , cost_guess, ℓ, ζ, I_guess, Y_guess)
+            min_guess2 = get_guess_cost(i, ind_next+1, cost_guess, ℓ, ζ, I_guess, Y_guess)
+            #min_guess > min_guess2 && println("$min_guess, $min_guess2")
+            min_guess = min(min_guess, min_guess2)
+        end
+        ddebug = (i == 2791)
         for ip=i+1:N
-
-
             ζ_level_insertion = false
+            ℓiip = ℓ[i,ip]
+
+            # Early check if guess exists
+            if !isa(guess,Void)
+                min_possible = find_minimum_value(ℓiip) + Λ_min[ip] + ζ
+                #TODO more exact than 10sqrt(sqrt(eps()))
+                if min_possible > min_guess + 10*sqrt(sqrt(eps()))
+                    nskip += 1
+                    #ddebug && print("skip $i,$ip ")
+                    #ddebug && println("min_pos: $(find_minimum_value(ℓiip)) + $(Λ_min[ip]) + $ζ > $min_guess")
+                    continue
+                else
+                    #println("Not skipping at i=$i, ip=$ip, Δa=$Δa")
+                    #ddebug && print("Not skip $i,$ip ")
+                    #ddebug && println("min_pos: $(find_minimum_value(ℓiip)) + $(Λ_min[ip]) + $ζ < $min_guess")
+                end
+            end
+            ddebug = if i == 214 && ip == 215
+                true
+            else
+                false
+            end
+
+            #ddebug && println(Λ[ip])
+            #ddebug && sleep(10)
+            counter = 0
             for λ in Λ[ip]
+                counter += 1
+                if counter == 10 && ddebug
+                    #return Λ
+                end
                 p = λ.p
                 #counter1 += 1
-
-                minimize_wrt_x2(ℓ[i,ip], p, ρ)
+                #ddebug && println("Λ[ip]: $(Λ[ip])")
+                #ddebug && println("p: $p")
+                #ddebug && println("counter: $counter, length: $(length(Λ_new))")
+                DynamicApproximations.minimize_wrt_x2(ℓiip, p, ρ)
                 ρ.c += ζ # add cost for break point
 
-
-                add_quadratic!(Λ_new, ρ)
+                DynamicApproximations.add_quadratic!(Λ_new, ρ)
 
 
                 if ζ_level_insertion == false
-                    if !poly_minus_constant_is_greater(Λ_new, ρ, ζ)
+                    if !DynamicApproximations.poly_minus_constant_is_greater(Λ_new, ρ, ζ)
                         ζ_level_insertion = true
                     end
                 end
@@ -418,12 +546,13 @@ function regularize{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial
             end
 
             if ζ_level_insertion == false
-                break
+                #break
             end
         end
         Λ[i] = Λ_new
+        Λ_min[i] = find_minimum_value(Λ_new)
     end
-
+    println("Nskip: $nskip")
     return Λ
 end
 

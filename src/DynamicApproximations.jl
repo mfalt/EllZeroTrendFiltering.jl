@@ -23,6 +23,9 @@ global const DEBUG = false
 global const DEBUG2 = false
 global const COUNTER_TEST = false
 global const OPTIMIZE = true
+# TODO Tweak this accuracy, sqrt(eps()) was not good enough for snp 500, M = 12 test
+global const accuracy = sqrt(eps())/100000
+
 
 include(joinpath("types","QuadraticPolynomial.jl"))
 include(joinpath("types","PiecewiseQuadratic.jl"))
