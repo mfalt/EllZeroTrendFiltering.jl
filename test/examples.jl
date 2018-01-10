@@ -1,3 +1,5 @@
+using Base.Test, StaticArrays, DynamicApproximations
+
 #SNP example
 N = 400
 data = snp500_data()[1:N]

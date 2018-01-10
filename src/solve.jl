@@ -1,5 +1,4 @@
 
-# TODO come up with better symbol for ρ
 """
     add_quadratic!(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}) where {T}
 Inserts a quadratic polynomial ρ into the linked list `Λ`, which represents a piecewise
@@ -8,10 +7,9 @@ quadratic polynomial, so that the new `Λ` satisfies
 """
 function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
 
-
     if Λ.next.left_endpoint == Inf # I.e. the piecewise quadratic object is empty, perhaps better to add dummy polynomial
         ρ.has_been_used = true
-        insert(Λ, ρ, -Inf)
+        insert(Λ, ρ, -Inf) # FIXME: Is specific insert function needed?
         return
     end
 
@@ -53,7 +51,7 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
                 elseif root2 <= left_endpoint
                     DEBUG && println("Two intersections to the left: old quadratic is smallest")
                     break # There will be no more intersections since Δa > 0
-                elseif root1 <= λ_a && root2 >= λ_b
+                elseif root1 <= left_endpoint && root2 >= right_endpoint
                     DEBUG && println("One intersections on either side, new quadratic is smallest")
                     λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
                 elseif root1 > left_endpoint && root2 < right_endpoint
@@ -143,7 +141,7 @@ end
 end
 
 @inline function update_segment_new(λ_prev, λ_curr, ρ)
-    ρ.has_been_used = true
+    ρ.has_been_used = true # TODO: Could be moved to the second clause
     if λ_prev.p === ρ
         λ_prev.next = λ_curr.next
         v1, v2 = λ_prev, λ_curr.next
@@ -155,13 +153,15 @@ end
 end
 
 @inline function update_segment_old_new(λ_curr, ρ, root)
+    # ... λ_curr | λ_new ...
     ρ.has_been_used = true
-    new_pwq_segment =  PiecewiseQuadratic(ρ, root, λ_curr.next)
-    λ_curr.next = new_pwq_segment
-    return new_pwq_segment, new_pwq_segment.next
+    λ_new =  PiecewiseQuadratic(ρ, root, λ_curr.next)
+    λ_curr.next = λ_new
+    return λ_new, λ_new.next
 end
 
 @inline function update_segment_new_old(λ_prev, λ_curr, ρ, root)
+    # ... λ_prev | (new segment) | λ_curr ...
     if λ_prev.p === ρ
         λ_curr.left_endpoint = root
     else
@@ -173,17 +173,22 @@ end
 end
 
 @inline function update_segment_new_old_new(λ_prev, λ_curr, ρ, root1, root2)
-    ρ.has_been_used = true
+    # Insert new segments with ρ before and after λ_curr
+    # ... λ_prev : (new segment) | λ_curr | (new segment) ...
+    # ( ρ.has_been_used = true is set inside the called funcitons )
     update_segment_new_old(λ_prev, λ_curr, ρ, root1)
     return update_segment_old_new(λ_curr, ρ, root2)
 end
 
 @inline function update_segment_old_new_old(λ_curr, ρ, root1, root2)
+    # ... λ_curr | λ_1  | λ_2 ...
+    # The second new piece contains a copy of the polynomial in λ_curr
+
     ρ.has_been_used = true
-    second_old_pwq_segment =  PiecewiseQuadratic(λ_curr.p, root2, λ_curr.next)
-    new_pwq_segment =  PiecewiseQuadratic(ρ, root1, second_old_pwq_segment)
-    λ_curr.next = new_pwq_segment
-    return second_old_pwq_segment, second_old_pwq_segment.next
+    λ_2 =  PiecewiseQuadratic(λ_curr.p, root2, λ_curr.next)
+    λ_1 =  PiecewiseQuadratic(ρ, root1, λ_2)
+    λ_curr.next = λ_1
+    return λ_2, λ_2.next
 end
 
 """
@@ -194,21 +199,21 @@ i.e. ρ(x₁) = min_x₂{ qf(x₁,x₂) +  p(x₂) }`
 
 The input `ρ` can be pre-allocated on input and will then be changed.
 """
-@inline function minimize_wrt_x2{T}(qf::QuadraticForm{T}, p::QuadraticPolynomial{T}, ρ=QuadraticPolynomial{T}())
+@inline function minimize_wrt_x2{T}(qf::QuadraticForm{T}, π::QuadraticPolynomial{T}, ρ=QuadraticPolynomial{T}())
     P = qf.P
     q = qf.q
     r = qf.r
 
-    P22_new = P[2,2] + p.a
+    P22_new = P[2,2] + π.a
 
     if P22_new > 0
         ρ.a = P[1,1] - P[1,2]^2 / P22_new
-        ρ.b = q[1] - P[1,2]*(q[2] + p.b) / P22_new
-        ρ.c = (r+p.c) - (q[2] + p.b)^2 / P22_new / 4
+        ρ.b = q[1] - P[1,2]*(q[2] + π.b) / P22_new
+        ρ.c = (r + π.c) - (q[2] + π.b)^2 / P22_new / 4
     elseif P22_new == 0
         ρ.a = P[1,1]
         ρ.b = q[1]
-        ρ.c = r + p.c
+        ρ.c = r + π.c
     else
         error("Piecewise quadratic cost should be positive (semi-)definite. Please submit a bug report.")
     end

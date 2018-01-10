@@ -27,7 +27,7 @@ end
 
 ##
 @testset "Brute force m=$m" for m = 1:4
-    I_bf, _, f_bf = brute_force_optimization(ℓ, cost_last, m);
+    I_bf, _, f_bf = brute_force_search(ℓ, cost_last, m);
 
     @test I_bf ∈  I_sols[m]
     @test f_bf ≈ f_costs[m]    atol = 1e-8

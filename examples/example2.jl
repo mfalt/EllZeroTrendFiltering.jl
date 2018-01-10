@@ -17,7 +17,7 @@ N = length(data)
 
 @time ℓ = DA.compute_discrete_transition_costs(data);
 
-#@time I, Y, f = brute_force_optimization(ℓ, K-1);
+#@time I, Y, f = brute_force_search(ℓ, K-1);
 
 cost_last = DA.QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
 

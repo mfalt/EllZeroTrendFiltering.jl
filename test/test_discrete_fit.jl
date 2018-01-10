@@ -33,7 +33,7 @@ for problem_fcn in [straight_line_problem, square_wave_problem, exp_problem, snp
 
     @testset "Data set: $problem_fcn, bruteforce with m=$m" for m in 1:M_bf
 
-        I_bf, Y_bf, f_bf = brute_force_optimization(ℓ, cost_last, m)
+        I_bf, Y_bf, f_bf = brute_force_search(ℓ, cost_last, m)
 
         @test isempty(I_sols[m]) || I_bf == I_sols[m]
         @test f_bf ≈ f_sols[m]  rtol=1e-10 atol=1e-10
