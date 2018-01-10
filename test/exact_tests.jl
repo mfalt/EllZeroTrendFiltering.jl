@@ -90,7 +90,3 @@ segments = 20
     # Test that we find same or better solution
     @test extra_cost > v[end] - 1e-12
 end
-
-# plot(t, f.(t))
-# plot!(Xsol, Ysol, m=:square, l=0)
-# plot!(t[I[end]], Y[end], l=0, m=:circle)

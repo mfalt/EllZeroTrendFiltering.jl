@@ -10,6 +10,7 @@ tests = [
     "find_optimal_fit.jl",
     "test_discrete_fit.jl",
     "exact_tests.jl",
+    "test_guess.jl",
     "examples.jl"]
 
 @testset "All Tests" begin
