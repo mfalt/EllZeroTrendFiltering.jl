@@ -24,12 +24,12 @@ g2(t) = g(t) + z(t)
 
 
 K = 7
-#@time I, Y, f = brute_force_optimization(ℓ, K-1);
+#@time I, Y, f = brute_force_search(ℓ, K-1);
 
 
 Λ_0 = [create_new_pwq(minimize_wrt_x2(ℓ[i, N])) for i in 1:N-1];
 
-@time Λ = find_optimal_fit(Λ_0, ℓ, 7);
+@time Λ = pwq_dp_constrained(Λ_0, ℓ, 7);
 tot
 
 using Plots

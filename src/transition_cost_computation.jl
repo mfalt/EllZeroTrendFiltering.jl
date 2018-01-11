@@ -1,5 +1,4 @@
 
-# TODO Maybe use big T for time indices, howabout mathcal{T}
 """
     ℓ = compute_transition_costs(g, t::AbstractArray)
 Computes the transition costs `ℓ` given a
@@ -59,7 +58,7 @@ end
 Computes the transition costs `ℓ` given a discrete
 function `g`.
 """
-function compute_discrete_transition_costs(g::AbstractArray)
+function compute_discrete_transition_costs(g::AbstractArray, t=1:length(g))
     T = Float64
 
     N = length(g)

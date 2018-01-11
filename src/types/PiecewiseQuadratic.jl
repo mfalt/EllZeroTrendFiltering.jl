@@ -11,16 +11,16 @@ Note that the first element of the list is sometimes assumed to be a list head w
 The list/element `x` is the last element in the list when `x.next === x` or `x.next.left_endpoint==Inf`.
 """
 mutable struct PiecewiseQuadratic{T}
-p::QuadraticPolynomial{T}
-left_endpoint::Float64
-next::PiecewiseQuadratic{T}
-PiecewiseQuadratic{T}()  where T = (x=new(); x.left_endpoint=Inf; x.next = x)
-PiecewiseQuadratic{T}(p, left_endpoint, next) where T = new(p, left_endpoint, next)
+    p::QuadraticPolynomial{T}
+    left_endpoint::Float64
+    next::PiecewiseQuadratic{T}
+    PiecewiseQuadratic{T}()  where T = (x=new(); x.left_endpoint=Inf; x.next = x)
+    PiecewiseQuadratic{T}(p, left_endpoint, next) where T = new(p, left_endpoint, next)
 end
 
 """
 Constructs piece of quadratic polynomial poiting to NULL, i.e.
-a rightmost piece, or one that has not been inserted into a piecewise quadfatic
+a rightmost segment, or one that has not been inserted into a piecewise quadratic
 """
 function PiecewiseQuadratic{T}(p::QuadraticPolynomial{T}, left_endpoint)
     PiecewiseQuadratic{T}(p, left_endpoint, PiecewiseQuadratic{T}())

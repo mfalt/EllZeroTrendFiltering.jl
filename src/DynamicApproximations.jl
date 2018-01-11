@@ -1,11 +1,11 @@
 module DynamicApproximations
 
 export QuadraticPolynomial, PiecewiseQuadratic, QuadraticForm
-export fit_pwl_constrained, fit_pwl_reguralized
-export regularize, find_optimal_fit
+export fit_pwl_constrained, fit_pwl_regularized
+export pwq_dp_regularized, pwq_dp_constrained
 #Should we export the following?
-export compute_transition_costs, recover_solution, brute_force_optimization
-export recover_optimal_index_set, compute_discrete_transition_costs
+export compute_transition_costs, compute_discrete_transition_costs
+export recover_optimal_index_set, recover_solution, brute_force_search
 export snp500_data
 
 import Base.-
@@ -27,13 +27,14 @@ global const OPTIMIZE = true
 include(joinpath("types","QuadraticPolynomial.jl"))
 include(joinpath("types","PiecewiseQuadratic.jl"))
 include(joinpath("types","QuadraticForm.jl"))
-include(joinpath("types","TransitionCostLazy.jl"))
+include(joinpath("types","transition_costs.jl"))
 
+AbstractTransitionCost{T} = Union{Array{QuadraticForm{T},2}, TransitionCostDiscrete{T}, TransitionCostContinuous{T}}
 
-AbstractTransitionCost{T} = Union{Array{QuadraticForm{T},2}, AbstractTransitionCostLazy{T}}
-
-include("solve.jl")
 include("transition_cost_computation.jl")
+include("brute_force_search.jl")
+include("solve.jl")
+
 
 snp500_data() = readdlm(joinpath(Pkg.dir("DynamicApproximations"),"examples","data","snp500.txt"))
 

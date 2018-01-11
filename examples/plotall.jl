@@ -50,7 +50,7 @@ g6(t) = ran[floor(Int64, t*10(N-1)+1)]
 ℓ = compute_transition_costs(g6, t);
 
 Λ_0 = [create_new_pwq(minimize_wrt_x2(ℓ[i, N], QuadraticPolynomial{Float64}(0.,0.,0.))) for i in 1:N-1];
-Λ, t2, _, _, _ = @timed find_optimal_fit(Λ_0, ℓ, 19);
+Λ, t2, _, _, _ = @timed pwq_dp_constrained(Λ_0, ℓ, 19);
 ##
 #[(isassigned(Λ,i) ? length(Λ[i]) : 0) for i in eachindex(Λ)]
 lengths = reshape([(isassigned(Λ,i) ? length(Λ[i]) : 0) for i in eachindex(Λ)], size(Λ))

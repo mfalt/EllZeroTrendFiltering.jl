@@ -12,13 +12,10 @@ has_been_used::Bool
 time_index::Int32
 ancestor::QuadraticPolynomial{T}
 function QuadraticPolynomial{T}(a::T, b::T, c::T) where {T}
-    # @assert a ≥ 0, # Δ may have negative a ...
+    # @assert a ≥ 0, # Δ may have negative a ..., Δ is currently not used...
     new(a, b, c, false, -1)
 end
-# function QuadraticPolynomial{T}(a::T, b::T, c::T, has_been_used, time_index, ancestor) where {T}
-#     @assert a ≥ 0
-#     new(a, b, c, has_been_used, time_index, ancestor)
-# end
+
 QuadraticPolynomial{T}() where {T} = new()
 end
 
@@ -79,20 +76,3 @@ No checks of this is done
 @inline function unsafe_minimum{T}(p::QuadraticPolynomial{T})
     return (-p.b^2/4/p.a + p.c)::T
 end
-
-#
-# function roots{T}(p::QuadraticPolynomial{T})
-#     b2_minus_4ac = p.b^2 - 4*p.a*p.c
-#     if b2_minus_4ac < 0
-#         return NaN, NaN
-#     end
-#
-#     if p.a != 0
-#         term1 = (p.b / 2 / p.a)
-#         term2 = sqrt(b2_minus_4ac) / 2 / abs(p.a)
-#         return -term1-term2, -term1+term2
-#     else
-#         term = -p.c / p.b
-#         return term, Inf
-#     end
-# end

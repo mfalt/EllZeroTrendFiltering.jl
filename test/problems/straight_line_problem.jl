@@ -4,7 +4,7 @@ function straight_line_problem()
 
     M_bf = 2
 
-    ζvec = [100, 30, 10, 3, 1, 0.3, 0.1, 0.03, 0.01]
+    ζ_vec = [100, 30, 10, 3, 1, 0.3, 0.1, 0.03, 0.01]
 
     # For each m there are many non-unique solution
     I_sols =
@@ -13,5 +13,5 @@ function straight_line_problem()
 
     f_sols = zeros(Float64, 10)
 
-    return g, M_bf, ζvec, I_sols, f_sols
+    return g, ζ_vec, I_sols, f_sols
 end

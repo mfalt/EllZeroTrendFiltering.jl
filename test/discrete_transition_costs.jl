@@ -2,10 +2,9 @@ using Base.Test, DynamicApproximations
 using Interpolations
 
 srand(31415)
-## Test 1
-# Compare the approximation costs computed using ℓ which is obtained from
-# compute_discrete_transition_costs and computed via simple linear interpolation
 
+# Auxilliary function for evaluating the approximation error for a specific
+# piecewise linear approximation (I, Y), given the transition costs ℓ
 function compute_cost(ℓ, I, Y)
     cost = 0.0;
     for k=1:length(I)-1
@@ -15,37 +14,43 @@ function compute_cost(ℓ, I, Y)
 end
 
 
+## Test 1
+# Compare the approximation error for specific piecewise linear approximations
+# (I, Y) when the costs are computed  by
+# (1) using ℓ computed by compute_discrete_transition_costs and
+#     then evaluated using the above auxilliary function
+# (2) simple linear interpolation
 
-t = linspace(0,π,50)
-g = sin.(t)
-
-
-ℓ = compute_discrete_transition_costs(g)
-
-## Test 1a
+g1 = sin.(linspace(0,π,50))
 I1 = [1,10,30,40,50]
-Y1 = g[I1]
+Y1 = g1[I1]
 
-y1 = interpolate((I1,), Y1, Gridded(Linear()))[1:length(g)]
-
-@test compute_cost(ℓ,I1,Y1) ≈ sum((y1[1:end-1]-g[1:end-1]).^2)
-
-
-## Test 1b
+g2 = g1
 I2 = [1,15,30,36,50]
 Y2 = randn(5)
 
-y2 = interpolate((t[I2],), Y2, Gridded(Linear()))[t]
+g3 = randn(20)
+I3 = [1; 3:2:19; 20]
+Y3 = randn(length(I3))
 
-@test compute_cost(ℓ,I2,Y2) ≈ sum((y2[1:end-1]-g[1:end-1]).^2)
+g4 = g3
+I4 = 1:length(g3)
+Y4 = g4
 
-#plot(t, sin.(t))
-#plot!(t[I1], Y1)
-#plot!(t, y1, color="red")
+for (g, I, Y) in ((g1, I1, Y1), (g2, I2, Y2), (g3, I3, Y3))#, (g4, I4, Y4))
+    ℓ = compute_discrete_transition_costs(g)
+    cost1 = compute_cost(ℓ,I,Y)
+
+    y = interpolate((I,), Y, Gridded(Linear()))[1:length(g)]
+    cost2 = sum((y[1:end-1]-g[1:end-1]).^2) # Note: cost at i=N should not be included
+
+    @test cost1 ≈ cost2
+end
+
 
 
 ## Test 2
-# Check the transition costs for a simple example
+# Check the transition costs for a very simple example
 ℓ = compute_discrete_transition_costs([1.0, 2.0, 3.0])
 
 # (y - 1)^2

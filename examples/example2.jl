@@ -17,13 +17,13 @@ N = length(data)
 
 @time ℓ = DA.compute_discrete_transition_costs(data);
 
-#@time I, Y, f = brute_force_optimization(ℓ, K-1);
+#@time I, Y, f = brute_force_search(ℓ, K-1);
 
 cost_last = DA.QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
 
 start_time = time()
 gc()
-@time Λ = DA.find_optimal_fit(ℓ, cost_last, 10, 1.65);
+@time Λ = DA.pwq_dp_constrained(ℓ, cost_last, 10, 1.65);
 println("Time: ", time()-start_time)
 
 #println(counter1, " ", counter2)
