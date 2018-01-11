@@ -310,13 +310,13 @@ end
 
 
 """
+TODO Update docstring:
+
 Finds the set I=(i_1, ..., i_M) that is the solution to the regularization problem
 
 minimize ∑ ℓ_(i, i+1)(y, y+1)  +  V_N(y_M)  +  ζ⋅card(I)
 
 where ℓ are positive-definite quadratic forms.
-
-Actually it computes cost to go functions V_(i,m), with
 """
 function pwq_dp_regularized{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, ζ::T)
     N = size(ℓ, 2)
@@ -443,7 +443,7 @@ function recover_solution(Λ::PiecewiseQuadratic, ℓ, V_N::QuadraticPolynomial,
     end
 
     if f_regularized < 0
-        warn("Computed cost < 0($f_regularized), if ≈ 0, this is probably due to numerical errors and nothing to worry about.")
+        warn("Computed cost ($f_regularized) < 0, if ≈ 0, this is probably due to numerical errors and nothing to worry about.")
     end
 
     return I, Y, f

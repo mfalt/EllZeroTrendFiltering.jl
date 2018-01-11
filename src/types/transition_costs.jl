@@ -45,15 +45,15 @@ Base.size(tc::TransitionCostContinuous, i::Integer) = size(tc)[i]
 # Test non-uniform sampling
 # non-uniform sampling needs to be handled
 
-struct TransitionCostDiscrete{T}
-    t::Vector{UInt32} # Should perhaps allow more general datatype
+struct TransitionCostDiscrete{T,TimeType}
+    t::TimeType
     P_matrices::Vector{SMatrix{2,2,T,4}}
     G1::Vector{T}
     G2::Vector{T}
     G3::Vector{T}
 end
 
-function TransitionCostDiscrete{T}(g::AbstractArray{T}, t=1:length(g)) where {T}
+function TransitionCostDiscrete(g::AbstractArray{T}, t=1:length(g)::TimeType) where {T,TimeType<:AbstractArray{<:Integer}}
     N = length(g)
 
     # Find sums of g, k*g, and g^2
@@ -78,7 +78,7 @@ function TransitionCostDiscrete{T}(g::AbstractArray{T}, t=1:length(g)) where {T}
     end
 
     P_mats = P_mats ./ (1.0:N-1).^2 # FIXME: Det var något problem här...
-    TransitionCostDiscrete{T}(t, P_mats, G1, G2, G3)
+    TransitionCostDiscrete{T,TimeType}(t, P_mats, G1, G2, G3)
 end
 
 # getindex returns a quadratic form H([x1, x2]) that represents the
