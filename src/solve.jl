@@ -227,16 +227,16 @@ global counter1
 global counter2
 
 """
-    Λ = pwq_dp_constrained(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf) where {T}
+    Λ = pwq_dp_constrained(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf) where {T}
 
-Given the transition costs `ℓ[i,j](y_i,y_j)` and the cost at the endpoint `V_0N(y_N)` find all solutions `f` with up to `M` segments for the problem
+Given the transition costs `ℓ[i,j](y_i,y_j)` and the cost at the endpoint `V_N(y_N)` find all solutions `f` with up to `M` segments for the problem
 
-V_i^m = minimize_f^M [ Σ_{k=1}^i { ℓ[k,k+1](f(k),f(k+1)) } + V_0N(f(N)) ]
+V_i^m = minimize_f^M [ Σ_{k=1}^i { ℓ[k,k+1](f(k),f(k+1)) } + V_N(f(N)) ]
 s.t          f(k) being continuous piecewise linear with `m` segements.
 
 i.e. `Λ[m,i]` contains the best (in `ℓ` cost) continuous piecewise linear function `f` with up to `M` segments over the interval `i` to `N`
 """
-function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf)
+function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf)
     #global counter1
     #global counter2
     #counter1 = 0
@@ -249,7 +249,7 @@ function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPo
     Λ = Array{PiecewiseQuadratic{T}}(M, N)
 
     for i=1:N-1
-        p = minimize_wrt_x2(ℓ[i, N], V_0N)
+        p = minimize_wrt_x2(ℓ[i, N], V_N)
         p.time_index = N
         Λ[1, i] .= create_new_pwq(p)
     end
@@ -318,14 +318,14 @@ where ℓ are positive-definite quadratic forms.
 
 Actually it computes cost to go functions V_(i,m), with
 """
-function pwq_dp_regularized{T}(ℓ::AbstractTransitionCost{T}, V_0N::QuadraticPolynomial{T}, ζ::T)
+function pwq_dp_regularized{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, ζ::T)
     N = size(ℓ, 2)
 
     Λ = Vector{PiecewiseQuadratic{T}}(N)
 
-    V_0N = deepcopy(V_0N)
-    V_0N.time_index = -1
-    Λ[N] = create_new_pwq(V_0N)
+    V_N = deepcopy(V_N)
+    V_N.time_index = -1
+    Λ[N] = create_new_pwq(V_N)
 
     ρ = QuadraticPolynomial{T}()
 
@@ -396,21 +396,21 @@ function recover_optimal_index_set{T}(Λ::PiecewiseQuadratic{T}, first_index=1)
 end
 
 """
-    Y, f = find_optimal_y_values(ℓ, V_0N, I)
-Given transition costs `ℓ`, cost of right endpoint `V_0N`, and breakpoint indicies `I`
+    Y, f = find_optimal_y_values(ℓ, V_N, I)
+Given transition costs `ℓ`, cost of right endpoint `V_N`, and breakpoint indicies `I`
 the optimal y-values `Y` and the optimal cost `f` are computed.
 """
 
-function find_optimal_y_values(ℓ, V_0N::QuadraticPolynomial, I)
+function find_optimal_y_values(ℓ, V_N::QuadraticPolynomial, I)
     m = length(I) - 1
 
     P = zeros(m+1, m+1)
     q = zeros(m+1)
 
     # Add cost for the right endpoint
-    P[m+1, m+1] = V_0N.a
-    q[m+1] = V_0N.b
-    r = V_0N.c
+    P[m+1, m+1] = V_N.a
+    q[m+1] = V_N.b
+    r = V_N.c
 
     # Form quadratic cost function Y'*P*Y + q'*Y + r
     # corresponding to the y-values in the vector Y
@@ -429,16 +429,22 @@ end
 
 # TODO: Include mζ in the cost?!
 """
-    I, Y, f = recover_solution(Λ::PiecewiseQuadratic{T}, ℓ, V_0N::QuadraticPolynomial, first_index=1)
+    I, Y, f = recover_solution(Λ::PiecewiseQuadratic{T}, ℓ, V_N::QuadraticPolynomial, first_index=1)
 
 """
-function recover_solution(Λ::PiecewiseQuadratic, ℓ, V_0N::QuadraticPolynomial, ζ=0.0)
+function recover_solution(Λ::PiecewiseQuadratic, ℓ, V_N::QuadraticPolynomial, ζ=0.0)
     I, _, f_expected = recover_optimal_index_set(Λ, 1)
-    Y, f = find_optimal_y_values(ℓ, V_0N::QuadraticPolynomial, I)
+    Y, f = find_optimal_y_values(ℓ, V_N::QuadraticPolynomial, I)
 
     f_regularized = f + ζ*(length(I)-1) # Include regularization cost
 
-    !isapprox(f_regularized, f_expected, atol=1e-10) && warn("Recovered cost ($f_regularized) is not what was expected from value function ($f_expected). Solution might be incorrect.")
+    if !isapprox(f_regularized, f_expected, atol=1e-10)
+        warn("Recovered cost ($f_regularized) is not what was expected from value function ($f_expected). Solution might be incorrect.")
+    end
+
+    if f_regularized < 0
+        warn("Computed cost < 0($f_regularized), if ≈ 0, this is probably due to numerical errors and nothing to worry about.")
+    end
 
     return I, Y, f
 end
@@ -553,30 +559,30 @@ end
 
 
 # Time-series
-function  fit_pwl_reguralized(g::AbstractArray, ζ; lazy=true)
+function  fit_pwl_regularized(g::AbstractArray, ζ; lazy=true)
     ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
                compute_discrete_transition_costs(g)
     # Discrete case, so cost at endpoint is quadratic
     cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
-    fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
+    fit_pwl_regularized_internal(ℓ, cost_last, ζ)
 end
 
 # Continuous function
-function  fit_pwl_reguralized(g, t, ζ, tol=1e-3; lazy=true)
+function  fit_pwl_regularized(g, t, ζ, tol=1e-3; lazy=true)
     ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
                compute_transition_costs(g, t, tol)
     # Continouous case, no cost at endpoint
     cost_last = zero(QuadraticPolynomial{Float64})
-    fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
+    fit_pwl_regularized_internal(ℓ, cost_last, ζ)
 end
 
-function  fit_pwl_reguralized_internal(ℓ, cost_last, ζ)
+function  fit_pwl_regularized_internal(ℓ, cost_last, ζ)
     Λ_reg = pwq_dp_regularized(ℓ, cost_last, ζ)
     #Get solution that starts at first index
-    I, _, f_reg = recover_optimal_index_set(Λ_reg[1])
-    Y, f = find_optimal_y_values(ℓ, cost_last, I)
+    I, Y, f = recover_solution(Λ_reg[1], ℓ, cost_last, ζ)
     return I, Y, f
 end
+
 
 
 # Time-series

@@ -6,7 +6,7 @@ function snp500_problem()
 
     M_bf = 2
 
-    ζ = 0.005:0.005:0.05
+    ζ_vec = 0.005:0.005:0.05
 
     I_sols =
     [[1, 300],
@@ -40,5 +40,5 @@ function snp500_problem()
     0.06051435296103591,
     0.05690190505811188]
 
-    return g, M_bf, ζ, I_sols, f_sols
+    return g, ζ_vec, I_sols, f_sols
 end

@@ -4,7 +4,7 @@ function exp_problem()
 
     M_bf = 10
 
-    ζvec = [100, 30, 10, 3, 1, 0.3, 0.1, 0.03, 0.01]
+    ζ_vec = [100, 30, 10, 3, 1, 0.3, 0.1, 0.03, 0.01]
 
     I_sols =
     [[1, 11],
@@ -30,5 +30,5 @@ function exp_problem()
     0.02951761758059246
     -8.098410830825742e-12]
 
-    return g, M_bf, ζvec, I_sols, f_sols
+    return g, ζ_vec, I_sols, f_sols
 end

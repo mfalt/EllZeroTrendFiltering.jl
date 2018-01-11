@@ -40,7 +40,7 @@ plot(g, t, l=(2,:black), lab="sin(x) + 0.5sin(3.5x) + 0.5sin(5.1x)")
 for ζ ∈ [0.1, 0.002]
     # Minimize ∫(f(x)-g(x))²dx + ζ⋅||d²f/dx²||₀
     # Will automatically integrate the function to compute the costs
-    I, Y, cost = fit_pwl_reguralized(g, t, ζ)
+    I, Y, cost = fit_pwl_regularized(g, t, ζ)
 
     plot!(t[I], Y, l=2, m=:circle, lab = "l2-norm=$(round(cost,3)), zeta=$ζ")
 end

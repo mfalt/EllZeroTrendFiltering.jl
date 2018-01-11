@@ -4,7 +4,7 @@ function square_wave_problem()
 
     M_bf = 5
 
-    ζvec = [100, 30, 10, 3, 1, 0.3, 0.1, 0.03, 0.01]
+    ζ_vec = [100, 30, 10, 3, 1, 0.3, 0.1, 0.03, 0.01]
 
     # For each m there are many non-unique solution
     I_sols =
@@ -21,5 +21,5 @@ function square_wave_problem()
         2.1356521739130434];
         zeros(Float64, 16)]
 
-    return g, M_bf, ζvec, I_sols, f_sols
+    return g, ζ_vec, I_sols, f_sols
 end

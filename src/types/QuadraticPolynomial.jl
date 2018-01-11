@@ -12,6 +12,7 @@ has_been_used::Bool
 time_index::Int32
 ancestor::QuadraticPolynomial{T}
 function QuadraticPolynomial{T}(a::T, b::T, c::T) where {T}
+    # @assert a ≥ 0, # Δ may have negative a ..., Δ is currently not used...
     new(a, b, c, false, -1)
 end
 
