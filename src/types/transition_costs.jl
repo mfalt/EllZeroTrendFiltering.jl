@@ -53,7 +53,7 @@ struct TransitionCostDiscrete{T,TimeType}
     G3::Vector{T}
 end
 
-function TransitionCostDiscrete(g::AbstractArray{T}, t=1:length(g)::TimeType) where {T,TimeType<:AbstractArray{<:Integer}}
+function TransitionCostDiscrete{T}(g::AbstractArray{T}, t::TimeType=1:length(g)) where {T, TimeType<:AbstractArray{<:Integer}}
     N = length(g)
 
     # Find sums of g, k*g, and g^2
