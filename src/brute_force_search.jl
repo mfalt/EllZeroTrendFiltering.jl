@@ -6,21 +6,18 @@ index sets with m segemets. The costs are evaluated using least squares.
 """
 function brute_force_search(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, m::Integer) where {T}
     cost_best = Inf
-
     I_best = Vector{Int64}(m+1)
     Y_best = Vector{T}(m+1)
 
     N = size(ℓ, 2)
 
+    I = zeros(Int64, m+1)
+    I[1] = 1
+    I[end] = N
+
     for I_inner=IterTools.subsets(2:N-1, m-1)
-        I = [1; I_inner; N]
-    # I = zeros(Int64, m+1)
-    # I[1] = 1
-    # I[end] = N
-    #
-    # for I_inner=IterTools.subsets(2:N-1, m-1)
-    #
-    #     I[2:m] = I_inner
+
+        I[2:m] .= I_inner
 
         P = zeros(m+1, m+1)
         q = zeros(m+1)
