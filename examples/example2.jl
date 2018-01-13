@@ -1,32 +1,19 @@
 using IterTools
 using Plots
-
-# The problem Σerror^2 + card(I)
-# Heuristic
-
-include(joinpath(Pkg.dir("DynamicApproximations"),"src","DynamicApproximations.jl"))
-##
-DA = DynamicApproximations
+using DynamicApproximations
 
 data = readdlm(joinpath(Pkg.dir("DynamicApproximations"),"examples","data","snp500.txt"))
 data = data[1:300]
 
 N = length(data)
 
-
-
 @time ℓ = DA.compute_discrete_transition_costs(data);
-
-#@time I, Y, f = brute_force_search(ℓ, K-1);
-
 cost_last = DA.QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
 
 start_time = time()
 gc()
-@time Λ = DA.pwq_dp_constrained(ℓ, cost_last, 10, 1.65);
+@time Λ = pwq_dp_constrained(ℓ, cost_last, 10, 1.65);
 println("Time: ", time()-start_time)
-
-#println(counter1, " ", counter2)
 
 for k=3:10
     println(k, " : ", DA.recover_optimal_index_set(Λ[k, 1])[3])
