@@ -1,4 +1,4 @@
-function snp500_problem()
+function snp500()
 
 
     data = readdlm(joinpath(Pkg.dir("DynamicApproximations"),"examples","data","snp500.txt"))

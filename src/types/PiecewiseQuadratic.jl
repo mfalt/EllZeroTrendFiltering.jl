@@ -217,7 +217,7 @@ function find_minimum(Λ::PiecewiseQuadratic)
     # TODO: True?
 
     f_opt = Inf
-    π_opt = similar(Λ.π)
+    π_opt = typeof(Λ.π)()
     x_opt = NaN
 
     for λ in Λ

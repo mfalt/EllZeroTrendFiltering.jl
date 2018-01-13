@@ -1,4 +1,4 @@
-function straight_line_problem()
+function straight_line()
 
     g = 0:0.02:1
 
