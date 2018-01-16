@@ -9,7 +9,6 @@ tests = [
     "discrete_transition_costs.jl",
     "brute_force_search.jl",
     "pwq_dp_constrained.jl",
-    "test_discrete_fit.jl",
     "exact_tests.jl",
     "fit_pwl_constrained.jl",
     "fit_pwl_regularized.jl",
