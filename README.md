@@ -4,6 +4,12 @@
 
 [![codecov](https://codecov.io/gh/mfalt/DynamicApproximations.jl/branch/master/graph/badge.svg?token=nt4j2gNB2l)](https://codecov.io/gh/mfalt/DynamicApproximations.jl)
 
+
+This package solves the problem of piecewise linear, *continuous*, approximation subject to either a hard limit or a regularization penalty on the number of break points. An exact solution is obtained using dynamic program over piecewise quadratic function, which avoids the combinatorial complexity of a naive approach.
+
+(FIXME: Mathematical formulation)
+
+
 ### Example: Constrained approximation
 
 Find best continouous piecewise approximations with up to M segments

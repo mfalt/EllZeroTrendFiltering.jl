@@ -1,4 +1,4 @@
-function square_wave_problem()
+function square_wave()
 
     g = kron([1, -1, 1, -1, 1], ones(5))
 

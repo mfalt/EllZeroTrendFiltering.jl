@@ -37,20 +37,11 @@ Base.zero{T<:QuadraticPolynomial}(S::T) = zero(T)
 
 -(p1::QuadraticPolynomial, p2::QuadraticPolynomial) = QuadraticPolynomial(p1.a-p2.a, p1.b-p2.b, p1.c-p2.c)
 
-# # x .= y .- z
-# # x .= y .+ z
-# function Base.broadcast!{T}(op::Function, x::QuadraticPolynomial{T}, y::QuadraticPolynomial{T}, z::QuadraticPolynomial{T})
-#     x.a = op(y.a,z.a)
-#     x.b = op(y.b,z.b)
-#     x.c = op(y.c,z.c)
-# end
-
 ==(p1::QuadraticPolynomial, p2::QuadraticPolynomial) = (p1.a==p2.a) && (p1.b==p2.b) && (p1.c==p2.c)
 
 @inline function (p::QuadraticPolynomial)(x)
     return p.a*x^2 + p.b*x + p.c
 end
-
 
 
 # Finds the minimum of a positive definite quadratic one variable polynomial

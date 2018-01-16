@@ -6,24 +6,21 @@ index sets with m segemets. The costs are evaluated using least squares.
 """
 function brute_force_search(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, m::Integer) where {T}
     cost_best = Inf
-
     I_best = Vector{Int64}(m+1)
     Y_best = Vector{T}(m+1)
 
     N = size(ℓ, 2)
 
-    for I_inner=IterTools.subsets(2:N-1, m-1)
-        I = [1; I_inner; N]
-    # I = zeros(Int64, m+1)
-    # I[1] = 1
-    # I[end] = N
-    #
-    # for I_inner=IterTools.subsets(2:N-1, m-1)
-    #
-    #     I[2:m] = I_inner
+    I = zeros(Int64, m+1)
+    I[1] = 1
+    I[end] = N
 
-        P = zeros(m+1, m+1)
-        q = zeros(m+1)
+    for I_inner=IterTools.subsets(2:N-1, m-1)
+
+        I[2:m] .= I_inner
+
+        P = SymTridiagonal(zeros(T, m+1), zeros(T, m+1))
+        q = zeros(T, m+1)
         r = 0
 
         # Add cost at right endpoint
@@ -34,14 +31,16 @@ function brute_force_search(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolyno
         # Form quadratic cost function Y'*P*Y + q'*Y + r
         # corresponding to the y-values in the vector Y
         for j=1:m
-            P[j:j+1,j:j+1] .+= ℓ[I[j], I[j+1]].P
+            P.dv[j] += ℓ[I[j], I[j+1]].P[1,1]
+            P.dv[j+1] += ℓ[I[j], I[j+1]].P[2,2]
+            P.ev[j] += ℓ[I[j], I[j+1]].P[1,2]
             q[j:j+1] .+= ℓ[I[j], I[j+1]].q
             r += ℓ[I[j], I[j+1]].r
         end
 
         # find the optimal Y-vector, and compute the correspinding error
         Yopt = -(P \ q) / 2
-        cost = Yopt' * P * Yopt + q' * Yopt + r
+        cost = dot(Yopt, P*Yopt) + q' * Yopt + r
 
         if cost < cost_best
             cost_best = cost

@@ -11,9 +11,10 @@ Note that the first element of the list is sometimes assumed to be a list head w
 The list/element `x` is the last element in the list when `x.next === x` or `x.next.left_endpoint==Inf`.
 """
 mutable struct PiecewiseQuadratic{T}
-    p::QuadraticPolynomial{T}
+    π::QuadraticPolynomial{T}
     left_endpoint::Float64
     next::PiecewiseQuadratic{T}
+
     PiecewiseQuadratic{T}()  where T = (x=new(); x.left_endpoint=Inf; x.next = x)
     PiecewiseQuadratic{T}(p, left_endpoint, next) where T = new(p, left_endpoint, next)
 end
@@ -126,7 +127,7 @@ function show{T}(io::IO, Λ::PiecewiseQuadratic{T})
         end
 
         print(io, "\t  :   ")
-        show(io, λ.p)
+        show(io, λ.π)
         print(io, "\n")
     end
     return
@@ -135,7 +136,7 @@ end
 function (Λ::PiecewiseQuadratic)(x::Number)
     for λ in Λ
         if λ.left_endpoint <= x < get_right_endpoint(λ)
-            return λ.p(x)
+            return λ.π(x)
         end
     end
     return NaN
@@ -145,7 +146,7 @@ function (Λ::PiecewiseQuadratic)(x::AbstractArray)
     y = zeros(x)
     for λ in Λ
         inds = λ.left_endpoint .<= x .< get_right_endpoint(λ)
-        y[inds] .= λ.p.(x[inds])
+        y[inds] .= λ.π.(x[inds])
     end
     return y
 end
@@ -184,7 +185,7 @@ function get_vals(Λ::PiecewiseQuadratic)
         end
 
         y_grid = linspace(left_endpoint, right_endpoint)
-        vals =  λ.p.(y_grid)
+        vals =  λ.π.(y_grid)
         append!(x, y_grid)
         append!(y, vals)
         push!(x_all, y_grid)
@@ -216,25 +217,25 @@ function find_minimum(Λ::PiecewiseQuadratic)
     # TODO: True?
 
     f_opt = Inf
-    p_opt = Λ.p # The segment containing the smallest polynimal
+    π_opt = typeof(Λ.π)()
     x_opt = NaN
 
     for λ in Λ
-        x, f = find_minimum(λ.p)
+        x, f = find_minimum(λ.π)
         if f < f_opt
             f_opt = f
             x_opt = x
-            p_opt = λ.p
+            π_opt = λ.π
         end
     end
-    return p_opt, x_opt, f_opt
+    return π_opt, x_opt, f_opt
 end
 
 function find_minimum_value(Λ::PiecewiseQuadratic)
     f_opt = Inf
 
     for λ in Λ
-        _, f = find_minimum(λ.p)
+        _, f = find_minimum(λ.π)
         if f < f_opt
             f_opt = f
         end
