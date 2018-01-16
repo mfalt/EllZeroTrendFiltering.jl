@@ -53,7 +53,7 @@ struct TransitionCostDiscrete{T,TimeType}
     G3::Vector{T}
 end
 
-function TransitionCostDiscrete{T}(g::AbstractArray{T}, t::TimeType=1:length(g)) where {T, TimeType<:AbstractArray{<:Integer}}
+function TransitionCostDiscrete{T}(g::AbstractArray, t::TimeType=1:length(g)) where {T, TimeType<:AbstractArray{<:Integer}}
     N = length(g)
 
     # Find sums of g, k*g, and g^2
@@ -69,30 +69,32 @@ function TransitionCostDiscrete{T}(g::AbstractArray{T}, t::TimeType=1:length(g))
     end
 
     # The P-matrices only depend on the distance d=ip-i
-    P_mats  = Vector{SMatrix{2,2,Float64,4}}(N-1)
-    P_mats[1] = @SMatrix [1.0 0; 0 0]
+    P_matrices  = Vector{SMatrix{2,2,T,4}}(N-1)
+    P_matrices[1] = @SMatrix [1.0 0; 0 0]
     for d=2:N-1
         off_diag_elems = sum([k*(d - k) for k=0:d-1])
-        P_mats[d] = @SMatrix [P_mats[d-1][1,1] + d^2    off_diag_elems;
-        off_diag_elems            P_mats[d-1][1,1]]
+        P_matrices[d] = @SMatrix [P_matrices[d-1][1,1] + d^2    off_diag_elems;
+        off_diag_elems            P_matrices[d-1][1,1]]
     end
 
-    P_mats = P_mats ./ (1.0:N-1).^2 # FIXME: Det var något problem här...
-    TransitionCostDiscrete{T,TimeType}(t, P_mats, G1, G2, G3)
+    P_matrices = P_matrices ./ (1.0:N-1).^2 # FIXME: Some problem here
+    TransitionCostDiscrete{T,TimeType}(t, P_matrices, G1, G2, G3)
 end
 
 # getindex returns a quadratic form H([x1, x2]) that represents the
 # transition cost from i to ip
 function getindex(tc::TransitionCostDiscrete, i::Integer, ip::Integer)
+    t_i = tc.t[i]
+    t_ip = tc.t[ip]
+    q = -2* 1/(t_ip-t_i) *
+    @SVector [-(tc.G2[t_ip] - tc.G2[t_i]) + t_ip*(tc.G1[t_ip] - tc.G1[t_i]),
+    (tc.G2[t_ip] - tc.G2[t_i]) - t_i*(tc.G1[t_ip] - tc.G1[t_i])]
 
-    q = -2* 1/(ip-i) *
-    @SVector [-(tc.G2[ip] - tc.G2[i]) + ip*(tc.G1[ip] - tc.G1[i]),
-    (tc.G2[ip] - tc.G2[i]) - i*(tc.G1[ip] - tc.G1[i])]
+    r =  tc.G3[t_ip] - tc.G3[t_i]
 
-    r =  tc.G3[ip] - tc.G3[i]
-
-    return QuadraticForm(tc.P_matrices[ip-i], q, r)
+    return QuadraticForm(tc.P_matrices[t_ip-t_i], q, r)
 end
+
 
 Base.size(tc::TransitionCostDiscrete) = (length(tc.t)-1, length(tc.t))
 Base.size(tc::TransitionCostDiscrete, i::Integer) = size(tc)[i]

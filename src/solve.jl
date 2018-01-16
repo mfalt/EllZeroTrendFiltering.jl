@@ -31,7 +31,7 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
         b2_minus_4ac =  Δb^2 - 4*Δa*Δc
 
         if Δa > 0 # ρ has greater curvature, i.e., ρ is smallest in the middle if intersect
-            if b2_minus_4ac <= 0
+            if b2_minus_4ac <= ACCURACY
                 # Zero (or one) intersections, old quadratic is smallest, just step forward
                 DEBUG && println("No intersections, old quadratic is smallest, Δa > 0, breaking.")
                 break
@@ -71,7 +71,7 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
             end
 
         elseif Δa < 0 # ρ has lower curvature, i.e., ρ is smallest on the sides
-            if b2_minus_4ac <= 0
+            if b2_minus_4ac <= ACCURACY
                 # Zero (or one) roots
                 λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
             else
@@ -556,9 +556,24 @@ end
 
 
 ## Convenience function
-
-
-# Time-series
+"""
+    I, Y, v = fit_pwl_regularized(g::AbstractArray, ζ; t=1:length(g), lazy=true)
+    I, Y, v = fit_pwl_regularized(g, t, ζ, tol=1e-3; lazy=true)
+Approximate `g[k]` (or `g(t)`) with a continuous piecewise linear function `f` according to
+    v = min_f `||f-g||₂^2 + ζ⋅(length(I)-2)`
+where the norm is `sum((f[k]-g[k])²)` (or integral over `(f(t)-g(t))²` from `t[1]` to `t[end]`).
+Returns:
+    `I`: Vector of length `M`
+    `Y`: Vector of length `M`
+    `v`: Float64
+such that the optimal function has breakpoints in `I` (or `t[I]`) and satisfies
+`f(I) .= Y` (or `f(t[I]) .= Y`).
+Kwargs:
+`t` is optional parameter in the discrete case, restricting the set of possible gridpoints,
+i.e. so that `f[t[I]] .= Y`.
+`lazy` = true, means that the internal transition costs `ℓ[i,j]` will be calculated when needed.
+`tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
+"""
 function  fit_pwl_regularized(g::AbstractArray, ζ; lazy=true)
     ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
                compute_discrete_transition_costs(g)
@@ -584,11 +599,28 @@ function  fit_pwl_regularized_internal(ℓ, cost_last, ζ)
 end
 
 
-
-# Time-series
-function  fit_pwl_constrained(g::AbstractArray, M; lazy=false)
-    ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
-               compute_discrete_transition_costs(g)
+"""
+    I, Y, v = fit_pwl_constrained(g::AbstractArray, M; t=1:length(g), lazy=true)
+    I, Y, v = fit_pwl_constrained(g, t, M, tol=1e-3; lazy=true)
+Approximate `g[k]` (or `g(t)`) with a continuous piecewise linear function `f` according to
+    v = min_f `||f-g||₂^2`
+    s.t. length(I)-2 = M
+where the norm is `sum((f[k]-g[k])²)` (or integral over `(f(t)-g(t))²` from `t[1]` to `t[end]`).
+Returns:
+    `I`: Vector of length `M`
+    `Y`: Vector of length `M`
+    `v`: Float64
+such that the optimal function has breakpoints in `I` (or `t[I]`) and satisfies
+`f(I) .= Y` (or `f(t[I]) .= Y`).
+Kwargs:
+`t` is optional parameter in the discrete case, restricting the set of possible gridpoints,
+i.e. so that `f[t[I]] .= Y`.
+`lazy` = true, means that the internal transition costs `ℓ[i,j]` will be calculated when needed.
+`tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
+"""
+function  fit_pwl_constrained(g::AbstractArray, M; t=1:length(g), lazy=false)
+    ℓ = lazy ? TransitionCostDiscrete{Float64}(g, t) :
+               compute_discrete_transition_costs(g, t)
     cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
     fit_pwl_constrained_internal(ℓ, cost_last, M)
 end
