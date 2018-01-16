@@ -24,9 +24,9 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
         right_endpoint = get_right_endpoint(λ_curr)
 
 
-        Δa = ρ.a - λ_curr.p.a
-        Δb = ρ.b - λ_curr.p.b
-        Δc = ρ.c - λ_curr.p.c
+        Δa = ρ.a - λ_curr.π.a
+        Δb = ρ.b - λ_curr.π.b
+        Δc = ρ.c - λ_curr.π.c
 
         b2_minus_4ac =  Δb^2 - 4*Δa*Δc
 
@@ -142,11 +142,11 @@ end
 
 @inline function update_segment_new(λ_prev, λ_curr, ρ)
     ρ.has_been_used = true # TODO: Could be moved to the second clause
-    if λ_prev.p === ρ
+    if λ_prev.π === ρ
         λ_prev.next = λ_curr.next
         v1, v2 = λ_prev, λ_curr.next
     else
-        λ_curr.p = ρ
+        λ_curr.π = ρ
         v1, v2 = λ_curr, λ_curr.next
     end
     return v1, v2
@@ -162,7 +162,7 @@ end
 
 @inline function update_segment_new_old(λ_prev, λ_curr, ρ, root)
     # ... λ_prev | (new segment) | λ_curr ...
-    if λ_prev.p === ρ
+    if λ_prev.π === ρ
         λ_curr.left_endpoint = root
     else
         ρ.has_been_used = true
@@ -185,7 +185,7 @@ end
     # The second new piece contains a copy of the polynomial in λ_curr
 
     ρ.has_been_used = true
-    λ_2 =  PiecewiseQuadratic(λ_curr.p, root2, λ_curr.next)
+    λ_2 =  PiecewiseQuadratic(λ_curr.π, root2, λ_curr.next)
     λ_1 =  PiecewiseQuadratic(ρ, root1, λ_2)
     λ_curr.next = λ_1
     return λ_2, λ_2.next
@@ -268,11 +268,8 @@ function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
             for ip=i+1:N-m+1
                 DEBUG && println("(m:$m, i:$i, ip:$ip)")
                 for λ in Λ[m-1, ip]
-                    p = λ.p
 
-                    #counter1 +=
-
-                    minimize_wrt_x2(ℓ[i,ip], p, ρ)
+                    minimize_wrt_x2(ℓ[i,ip], λ.π, ρ)
 
                     DEBUG && println("Obtained ρ = $ρ")
 
@@ -288,7 +285,7 @@ function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
 
                     if ρ.has_been_used == true
                         ρ.time_index = ip
-                        ρ.ancestor = p
+                        ρ.ancestor = λ.π
                         ρ = QuadraticPolynomial{T}()
                         ρ.has_been_used = false
                     end
@@ -336,10 +333,9 @@ function pwq_dp_regularized{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
 
             ζ_level_insertion = false
             for λ in Λ[ip]
-                p = λ.p
                 #counter1 += 1
 
-                minimize_wrt_x2(ℓ[i,ip], p, ρ)
+                minimize_wrt_x2(ℓ[i,ip], λ.π, ρ)
                 ρ.c += ζ # add cost for break point
 
 
@@ -347,7 +343,7 @@ function pwq_dp_regularized{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
 
                 if ρ.has_been_used
                     ρ.time_index = ip
-                    ρ.ancestor = p
+                    ρ.ancestor = λ.π
                     ρ = QuadraticPolynomial{T}()
                     ρ.has_been_used = false
 
@@ -469,9 +465,9 @@ function poly_minus_constant_is_greater{T}(Λ::PiecewiseQuadratic{T}, ρ::Quadra
         left_endpoint = λ_curr.left_endpoint
         right_endpoint = get_right_endpoint(λ_curr)
 
-        Δa = ρ.a - λ_curr.p.a
-        Δb = ρ.b - λ_curr.p.b
-        Δc = (ρ.c - ζ) - λ_curr.p.c
+        Δa = ρ.a - λ_curr.π.a
+        Δb = ρ.b - λ_curr.π.b
+        Δc = (ρ.c - ζ) - λ_curr.π.c
 
         b2_minus_4ac =  Δb^2 - 4*Δa*Δc
 

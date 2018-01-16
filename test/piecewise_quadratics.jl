@@ -45,8 +45,8 @@ function verify_piecewise_quadratic(c_mat, show_plot=false)
             break
         end
 
-        TEST_PRINT_LEVEL > 0 && println("Continutiy diff: ", λ.p(x) - λ.next.p(x))
-        @test λ.p(x) ≈ λ.next.p(x)
+        TEST_PRINT_LEVEL > 0 && println("Continutiy diff: ", λ.π(x) - λ.next.π(x))
+        @test λ.π(x) ≈ λ.next.π(x)
     end
 
     # Check that the piecewise quadratic is smaller than all the quadratics
@@ -100,11 +100,11 @@ add_quadratic!(pwq2, p3)
 add_quadratic!(pwq2, p1)
 @test length(pwq2) == 4
 
-@test pwq1[1].p === pwq2[1].p == p1
+@test pwq1[1].π === pwq2[1].π == p1
 @test pwq1[2].left_endpoint == pwq2[2].left_endpoint == -1
-@test pwq1[2].p === pwq2[2].p == p2
+@test pwq1[2].π === pwq2[2].π == p2
 @test pwq1[3].left_endpoint == pwq2[3].left_endpoint == 0
-@test pwq1[3].p === pwq2[3].p
+@test pwq1[3].π === pwq2[3].π
 
 
 #---
