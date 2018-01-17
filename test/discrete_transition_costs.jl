@@ -24,20 +24,25 @@ end
 g1 = sin.(linspace(0,π,50))
 I1 = [1,10,30,40,50]
 Y1 = g1[I1]
+t_ss1 = [1, 10, 21, 33, 50]
 
 g2 = g1
 I2 = [1,15,30,36,50]
 Y2 = randn(5)
+t_ss2 = t_ss1
 
 g3 = randn(20)
 I3 = [1; 3:2:19; 20]
 Y3 = randn(length(I3))
+t_ss3 = [1,5,10,15,20]
 
 g4 = g3
 I4 = 1:length(g3)
 Y4 = g4
+t_ss4 = t_ss3
 
-for (g, I, Y) in ((g1, I1, Y1), (g2, I2, Y2), (g3, I3, Y3))#, (g4, I4, Y4))
+
+for (g, I, Y, t_subsampled) in ((g1, I1, Y1, t_ss1), (g2, I2, Y2, t_ss2), (g3, I3, Y3, t_ss3))#, (g4, I4, Y4))
     ℓ = compute_discrete_transition_costs(g)
     cost1 = compute_cost(ℓ,I,Y)
 
@@ -45,8 +50,18 @@ for (g, I, Y) in ((g1, I1, Y1), (g2, I2, Y2), (g3, I3, Y3))#, (g4, I4, Y4))
     cost2 = sum((y[1:end-1]-g[1:end-1]).^2) # Note: cost at i=N should not be included
 
     @test cost1 ≈ cost2
-end
 
+    # Test transition cost with t grid
+    ℓ_subsampled = compute_discrete_transition_costs(g, t_subsampled)
+
+    for i in 1:length(t_subsampled)-1
+        for ip in (i+1):length(t_subsampled)
+            t_i = t_subsampled[i]
+            t_ip = t_subsampled[ip]
+            @test ℓ_subsampled[i, ip] == ℓ[t_i, t_ip]
+        end
+    end
+end
 
 
 ## Test 2
