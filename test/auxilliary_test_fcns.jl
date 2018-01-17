@@ -2,19 +2,6 @@
 circle_segment(N) = sin.(acos.(linspace(-1, 1, N)))
 linear_trend(N) = (0:N-1)
 
-# function get_transition_costs(g, t; tol=1e-3)
-#     ℓ = TransitionCostContinuous{Float64}(g, t, tol=tol)
-#     V_N = zero(QuadraticPolynomial{Float64})
-#     return ℓ, V_N
-# end
-# function get_transition_costs(g::AbstractArray, t; tol=1e-3)
-#     ℓ = compute_discrete_transition_costs(g, t)
-#     V_N = QuadraticPolynomial(1.0, -2*g[t[end]], g[t[end]]^2)
-#     return ℓ, V_N
-# end
-
-
-
 """ brute_force_multi(g, M, t=1:length(g); tol=1e-3)
     Finds the solution to the cardinality constrained problem for
     m=1:M segments using brute force with possible breakpoints on grid t.
