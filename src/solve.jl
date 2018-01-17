@@ -244,7 +244,7 @@ function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
 
     N = size(ℓ, 2)
 
-    @assert M-1 <= N "Cannot have more segments than N-1."
+    @assert M <= N-1 "Cannot have more segments than N-1."
 
     Λ = Array{PiecewiseQuadratic{T}}(M, N)
 
@@ -570,9 +570,9 @@ i.e. so that `f[t[I]] .= Y`.
 `lazy` = true, means that the internal transition costs `ℓ[i,j]` will be calculated when needed.
 `tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
 """
-function  fit_pwl_regularized(g::AbstractArray, ζ; lazy=true)
-    ℓ = lazy ? TransitionCostDiscrete{Float64}(g) :
-               compute_discrete_transition_costs(g)
+function  fit_pwl_regularized(g::AbstractArray, ζ; t=1:length(g), lazy=true)
+    ℓ = lazy ? TransitionCostDiscrete{Float64}(g, t) :
+               compute_discrete_transition_costs(g, t)
     # Discrete case, so cost at endpoint is quadratic
     cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
     fit_pwl_regularized_internal(ℓ, cost_last, ζ)
