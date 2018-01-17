@@ -20,6 +20,7 @@ QuadraticPolynomial{T}() where {T} = new()
 end
 
 QuadraticPolynomial{T}(a::T,b::T,c::T) = QuadraticPolynomial{T}(a,b,c)
+QuadraticPolynomial(a,b,c) = QuadraticPolynomial(promote(a,b,c)...)
 
 function QuadraticPolynomial(x::Vector)
     QuadraticPolynomial(x[3], x[2], x[1])

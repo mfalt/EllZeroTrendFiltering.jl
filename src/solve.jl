@@ -549,9 +549,33 @@ function poly_minus_constant_is_greater{T}(Λ::PiecewiseQuadratic{T}, ρ::Quadra
     return true
 end
 
+# Continuous case
+""" `get_transition_costs(g, t, lazy; tol=1e-3)`
+    Return `(ℓ, cost_last)`: the transition cost and end-cost.
+    Slightly unsafe since `tol` is ignored (not needed) on discrete problems
+"""
+function get_transition_costs(g, t, lazy; tol=1e-3)
+    ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
+               compute_transition_costs(g, t, tol)
+    # Continouous case, no cost at endpoint
+    cost_last = zero(QuadraticPolynomial{Float64})
+    return ℓ, cost_last
+end
+
+# Discrete case, tol is not used here, but in signature to enable dispatch
+function get_transition_costs(g::AbstractArray, t, lazy; tol=1e-3)
+    ℓ = lazy ? TransitionCostDiscrete{Float64}(g, t) :
+               compute_discrete_transition_costs(g, t)
+    if t[1] != 1 || t[end] != length(g)
+        warn("In fit_pwl_constrained: The supplied grid t only covers the range ($(t[1]),$(t[end])) while the range of indices for g is (1,$(length(g))). No costs will be considered outside the range of t.")
+    end
+    # Discrete case, so cost at endpoint is quadratic
+    cost_last = QuadraticPolynomial(1.0, -2*g[t[end]], g[t[end]]^2)
+    return ℓ, cost_last
+end
 
 
-## Convenience function
+## Public interface
 """
     I, Y, v = fit_pwl_regularized(g::AbstractArray, ζ; t=1:length(g), lazy=true)
     I, Y, v = fit_pwl_regularized(g, t, ζ, tol=1e-3; lazy=true)
@@ -571,19 +595,13 @@ i.e. so that `f[t[I]] .= Y`.
 `tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
 """
 function  fit_pwl_regularized(g::AbstractArray, ζ; t=1:length(g), lazy=true)
-    ℓ = lazy ? TransitionCostDiscrete{Float64}(g, t) :
-               compute_discrete_transition_costs(g, t)
-    # Discrete case, so cost at endpoint is quadratic
-    cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
+    ℓ, cost_last = get_transition_costs(g, t, lazy)
     fit_pwl_regularized_internal(ℓ, cost_last, ζ)
 end
 
 # Continuous function
 function  fit_pwl_regularized(g, t, ζ, tol=1e-3; lazy=true)
-    ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
-               compute_transition_costs(g, t, tol)
-    # Continouous case, no cost at endpoint
-    cost_last = zero(QuadraticPolynomial{Float64})
+    ℓ, cost_last = get_transition_costs(g, t, lazy, tol=tol)
     fit_pwl_regularized_internal(ℓ, cost_last, ζ)
 end
 
@@ -615,26 +633,22 @@ i.e. so that `f[t[I]] .= Y`.
 `tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
 """
 function  fit_pwl_constrained(g::AbstractArray, M; t=1:length(g), lazy=false)
-    ℓ = lazy ? TransitionCostDiscrete{Float64}(g, t) :
-               compute_discrete_transition_costs(g, t)
-    cost_last = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
+    ℓ, cost_last = get_transition_costs(g, t, lazy)
     fit_pwl_constrained_internal(ℓ, cost_last, M)
 end
 
 # Continuous function
 function  fit_pwl_constrained(g, t, M, tol=1e-3; lazy=false)
-    ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
-               compute_transition_costs(g, t, tol)
-    cost_last = zero(QuadraticPolynomial{Float64})
+    ℓ, cost_last = get_transition_costs(g, t, lazy, tol=tol)
     fit_pwl_constrained_internal(ℓ, cost_last, M)
 end
 
-function  fit_pwl_constrained_internal(ℓ, cost_last, M)
+function  fit_pwl_constrained_internal{T}(ℓ::AbstractTransitionCost{T}, cost_last, M)
     Λ = pwq_dp_constrained(ℓ, cost_last, M);
 
     Ivec = Vector{Vector{Int}}(M)
-    Yvec = Vector{Vector{Float64}}(M)
-    fvec = Vector{Float64}(M)
+    Yvec = Vector{Vector{T}}(M)
+    fvec = Vector{T}(M)
 
     for m=1:M
         Ivec[m], Yvec[m], fvec[m] = recover_solution(Λ[m, 1], ℓ, cost_last)

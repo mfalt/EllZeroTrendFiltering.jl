@@ -12,6 +12,7 @@ tests = [
     "exact_tests.jl",
     "fit_pwl_constrained.jl",
     "fit_pwl_regularized.jl",
+    "subsample_test.jl",
     "examples.jl"]
 
 @testset "All Tests" begin

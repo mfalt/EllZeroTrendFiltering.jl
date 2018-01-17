@@ -61,7 +61,7 @@ problem_data[10] = ("super_exponential5",
 for (problem_name, g, M) in problem_data[10:end]
 
 
-    @time I_vec, Y_vec, f_vec = brute_force_multi(g, 1, M)
+    @time I_vec, Y_vec, f_vec = brute_force_multi(g, M)
 
     # It should not be beneficial to use more segments than has been computed ...
     ζ_vec = logspace(log10(f_vec[2]), log10(0.8*(max(f_vec[end-1] - f_vec[end], f_vec[end-1]))), 10)
