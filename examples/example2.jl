@@ -1,8 +1,8 @@
 using IterTools
 using Plots
-using DynamicApproximations
+using EllZeroTrendFiltering
 
-data = readdlm(joinpath(Pkg.dir("DynamicApproximations"),"examples","data","snp500.txt"))
+data = readdlm(joinpath(Pkg.dir("EllZeroTrendFiltering"),"examples","data","snp500.txt"))
 data = data[1:300]
 
 N = length(data)

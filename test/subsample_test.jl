@@ -1,6 +1,6 @@
-using DynamicApproximations, Base.Test
+using EllZeroTrendFiltering, Base.Test
 
-include(joinpath(Pkg.dir("DynamicApproximations"),"test","auxilliary_test_fcns.jl"))
+include(joinpath(Pkg.dir("EllZeroTrendFiltering"),"test","auxilliary_test_fcns.jl"))
 
 srand(1234)
 

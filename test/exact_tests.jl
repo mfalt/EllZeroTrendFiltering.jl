@@ -1,4 +1,4 @@
-using Base.Test, DynamicApproximations
+using Base.Test, EllZeroTrendFiltering
 
 zero_deviation(x) = 0
 abstract type FunctionDeviation end

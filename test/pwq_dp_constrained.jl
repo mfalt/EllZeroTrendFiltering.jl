@@ -1,4 +1,4 @@
-using Base.Test, DynamicApproximations
+using Base.Test, EllZeroTrendFiltering
 
 t = linspace(0,4π,50)
 g = sin

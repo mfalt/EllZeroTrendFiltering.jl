@@ -1,7 +1,7 @@
 function write_problem_to_file(problem_name, g, ζ_vec, I_sols, f_sols)
 
 
-outfile = joinpath(Pkg.dir("DynamicApproximations"),"test",
+outfile = joinpath(Pkg.dir("EllZeroTrendFiltering"),"test",
                     "problems",  problem_name * ".jl")
 f = open(outfile, "w")
 
