@@ -2,7 +2,7 @@
 # Piecewise Linear Continouous Interpolation Constraints
 # Sparse L2 Optimal Fitting subject Continuity Constraints
 # Integrated Square
-using DynamicApproximations: minimize_wrt_x2
+using EllZeroTrendFiltering: minimize_wrt_x2
 
 using Polynomials
 using IterTools

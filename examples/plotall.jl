@@ -1,7 +1,7 @@
 
 using Base.Test
 
-@everywhere include(joinpath(Pkg.dir("DynamicApproximations"),"src","jl"))
+@everywhere include(joinpath(Pkg.dir("EllZeroTrendFiltering"),"src","jl"))
 
 @everywhere using Polynomials, IterTools, Plots
 

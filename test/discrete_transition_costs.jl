@@ -1,4 +1,4 @@
-using Base.Test, DynamicApproximations
+using Base.Test, EllZeroTrendFiltering
 using Interpolations
 
 srand(31415)

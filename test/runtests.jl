@@ -1,4 +1,4 @@
-using DynamicApproximations
+using EllZeroTrendFiltering
 using Base.Test
 
 tests = [

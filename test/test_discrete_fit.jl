@@ -1,10 +1,10 @@
 using Base.Test
-using DynamicApproximations: find_optimal_y_values
+using EllZeroTrendFiltering: find_optimal_y_values
 
 
 for problem_fcn in ["straight_line_problem", "square_wave_problem", "exp_problem", "snp500_problem"]
 
-    include(joinpath(Pkg.dir("DynamicApproximations"),"test","problems", problem_fcn * ".jl"))
+    include(joinpath(Pkg.dir("EllZeroTrendFiltering"),"test","problems", problem_fcn * ".jl"))
 ##
     g, ζvec, I_sols, f_sols = @eval $(Symbol(problem_fcn))()
 

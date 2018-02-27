@@ -4,11 +4,11 @@ using Plots
 # The problem Σerror^2 + card(I)
 # Heuristic
 
-include(joinpath(Pkg.dir("DynamicApproximations"),"src","DynamicApproximations.jl"))
+include(joinpath(Pkg.dir("EllZeroTrendFiltering"),"src","EllZeroTrendFiltering.jl"))
 ##
-DA = DynamicApproximations
+DA = EllZeroTrendFiltering
 
-data = readdlm(joinpath(Pkg.dir("DynamicApproximations"),"examples","data","snp500.txt"))
+data = readdlm(joinpath(Pkg.dir("EllZeroTrendFiltering"),"examples","data","snp500.txt"))
 data = data[1:300]
 
 N = length(data)

@@ -1,4 +1,4 @@
-module DynamicApproximations
+module EllZeroTrendFiltering
 
 export QuadraticPolynomial, PiecewiseQuadratic, QuadraticForm
 export fit_pwl_constrained, fit_pwl_regularized
@@ -36,6 +36,6 @@ include("brute_force_search.jl")
 include("solve.jl")
 
 
-snp500_data() = readdlm(joinpath(Pkg.dir("DynamicApproximations"),"examples","data","snp500.txt"))
+snp500_data() = readdlm(joinpath(Pkg.dir("EllZeroTrendFiltering"),"examples","data","snp500.txt"))
 
 end # module
