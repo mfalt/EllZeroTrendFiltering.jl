@@ -1,8 +1,8 @@
-# DynamicApproximations
+# EllZeroTrendFiltering
 
-[![Build Status](https://travis-ci.com/mfalt/DynamicApproximations.jl.svg?token=a1HpLsx1pmUnusz71XN8&branch=master)](https://travis-ci.com/mfalt/DynamicApproximations.jl)
+[![Build Status](https://travis-ci.com/mfalt/EllZeroTrendFiltering.jl.svg?token=a1HpLsx1pmUnusz71XN8&branch=master)](https://travis-ci.com/mfalt/EllZeroTrendFiltering.jl)
 
-[![codecov](https://codecov.io/gh/mfalt/DynamicApproximations.jl/branch/master/graph/badge.svg?token=nt4j2gNB2l)](https://codecov.io/gh/mfalt/DynamicApproximations.jl)
+[![codecov](https://codecov.io/gh/mfalt/EllZeroTrendFiltering.jl/branch/master/graph/badge.svg?token=nt4j2gNB2l)](https://codecov.io/gh/mfalt/EllZeroTrendFiltering.jl)
 
 
 This package solves the problem of piecewise linear, *continuous*, approximation subject to either a hard limit or a regularization penalty on the number of break points. An exact solution is obtained using dynamic program over piecewise quadratic function, which avoids the combinatorial complexity of a naive approach.
@@ -14,7 +14,7 @@ This package solves the problem of piecewise linear, *continuous*, approximation
 
 Find best continouous piecewise approximations with up to M segments
 ```julia
-using DynamicApproximations, Plots
+using EllZeroTrendFiltering, Plots
 #Get sample data
 N = 400
 data = snp500_data()[1:N]
@@ -37,7 +37,7 @@ plot!(Ivec[M], Yvec[M], l=2, m=:circle, lab="m=$M, cost = $(round(fvec[M],3))")
 
 Find best continouous piecewise approximations with cost ζ per breakpoint.
 ```julia
-using DynamicApproximations, Plots
+using EllZeroTrendFiltering, Plots
 
 g(x) = sin(x) + 0.5sin(3.5x) + 0.5sin(5.1x)
 t = linspace(0,2π,201)

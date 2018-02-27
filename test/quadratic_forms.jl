@@ -1,5 +1,5 @@
-using Base.Test, StaticArrays, DynamicApproximations
-using DynamicApproximations.minimize_wrt_x2
+using Base.Test, StaticArrays, EllZeroTrendFiltering
+using EllZeroTrendFiltering.minimize_wrt_x2
 
 # Addition of quaratic forms
 Q = QuadraticForm(@SMatrix([2.0 0; 0 1]), @SVector([0.0,0]), 1.0) +

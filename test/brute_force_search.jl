@@ -1,5 +1,5 @@
 using Base.Test
-using DynamicApproximations
+using EllZeroTrendFiltering
 
 include("auxilliary_test_fcns.jl")
 
@@ -11,7 +11,7 @@ for problem_fcn in ["discontinuous1",
                     "white_noise",
                     "exponential"]
 
-    include(joinpath(Pkg.dir("DynamicApproximations"),"test","problems", problem_fcn * ".jl"))
+    include(joinpath(Pkg.dir("EllZeroTrendFiltering"),"test","problems", problem_fcn * ".jl"))
 
     g, ζ_vec, I_sols, f_sols = @eval $(Symbol(problem_fcn))()
 

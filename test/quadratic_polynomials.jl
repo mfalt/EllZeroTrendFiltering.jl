@@ -1,5 +1,5 @@
 using Base.Test
-using DynamicApproximations: unsafe_minimum
+using EllZeroTrendFiltering: unsafe_minimum
 
 # Subtraction of quadratic polynomials
 @test QuadraticPolynomial(4.0, -2.0, 3.0) - QuadraticPolynomial(1.0, 1.0, 2.0) == QuadraticPolynomial(3.0,-3.0,1.0)

@@ -5,7 +5,7 @@ using SCS
 
 
 
-data = readdlm(joinpath(Pkg.dir("DynamicApproximations"),"examples","data","snp500.txt"))
+data = readdlm(joinpath(Pkg.dir("EllZeroTrendFiltering"),"examples","data","snp500.txt"))
 n = size(data)[1]
 
 #p = plot(1:length(data), data)

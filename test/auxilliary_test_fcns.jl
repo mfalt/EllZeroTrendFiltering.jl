@@ -14,7 +14,7 @@ function brute_force_multi(g, M, t=1:length(g); tol=1e-3)
         M = length(g)-1
     end
 
-    ℓ, V_N = DynamicApproximations.get_transition_costs(g, t, true, tol=tol)
+    ℓ, V_N = EllZeroTrendFiltering.get_transition_costs(g, t, true, tol=tol)
 
     I_vec = Vector{Vector{Int64}}(M)
     Y_vec = Vector{Vector{Float64}}(M)

@@ -1,4 +1,4 @@
-using Base.Test, StaticArrays, DynamicApproximations
+using Base.Test, StaticArrays, EllZeroTrendFiltering
 
 #SNP example
 N = 400

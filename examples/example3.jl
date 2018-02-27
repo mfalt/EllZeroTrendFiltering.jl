@@ -34,7 +34,7 @@ function is_local_max(y)
 end
 
 #---
-data = readdlm(joinpath(Pkg.dir("DynamicApproximations"),"examples","data","snp500.txt"))
+data = readdlm(joinpath(Pkg.dir("EllZeroTrendFiltering"),"examples","data","snp500.txt"))
 
 N = length(data)
 H =  spdiagm((ones(N-2), -2*ones(N-2), ones(N-2)), (0,1,2))
