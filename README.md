@@ -7,9 +7,28 @@
 
 This package solves the problem of piecewise linear, *continuous*, approximation subject to either a hard limit or a regularization penalty on the number of break points. An exact solution is obtained using dynamic program over piecewise quadratic function, which avoids the combinatorial complexity of a naive approach.
 
-(FIXME: Mathematical formulation)
+### Mathematical Description
 
+We want to find a piecewise linear, continuous function ![f_{I,Y}](figures/f_IY.svg) with few segments, where `I` is the set of breakpoints, and `Y` are the values of the function at those breakpoints. This problem can be formulated as a constrained problem
 
+![Problem Formulation Constrained](figures/problemConstrained.svg)
+
+where `M` is the number of segments, or as a regulartized problem
+
+![Problem Formulation Regularized](figures/problemRegularized.svg)
+
+These problems can be solved for a discrete set of points `g` using
+```julia
+I, Y, v = fit_pwl_constrained(g, M)
+I, Y, v = fit_pwl_regularized(g, ζ)
+```
+where the resulting function satisfies `f(I[k]) = Y[k]`,
+or for a general function `g: ℝ ⟶ ℝ` with
+```julia
+I, Y, v = fit_pwl_constrained(g, t, M)
+I, Y, v = fit_pwl_regularized(g, t, ζ)
+```
+where `t` is the set of possible breakpoints and the resulting function satisfies `f(t[I[k]]) = Y[k]`.
 ### Example: Constrained approximation
 
 Find best continouous piecewise approximations with up to M segments

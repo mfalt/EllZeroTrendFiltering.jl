@@ -296,7 +296,7 @@ function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
             if i == 1
                 if OPTIMIZE
                     upper_bound_inner = find_minimum_value(Λ[m,1])
-			        upper_bound_inner += sqrt(eps())
+                    upper_bound_inner += sqrt(eps())
                 end
             end
         end
