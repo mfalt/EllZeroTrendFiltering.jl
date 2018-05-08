@@ -22,7 +22,7 @@ function verify_piecewise_quadratic(c_mat, show_plot=false)
     end
 
     # Insert quadratics into piecewise quadfatic
-    pwq = create_new_pwq()
+    pwq = create_new_pwq(Float64)
     for p in poly_list
         TEST_PRINT_LEVEL > 0 && println("Inserting: ", p)
         add_quadratic!(pwq, p)

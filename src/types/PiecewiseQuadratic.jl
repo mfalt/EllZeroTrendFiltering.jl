@@ -12,7 +12,7 @@ The list/element `x` is the last element in the list when `x.next === x` or `x.n
 """
 mutable struct PiecewiseQuadratic{T}
     π::QuadraticPolynomial{T}
-    left_endpoint::Float64
+    left_endpoint::T
     next::PiecewiseQuadratic{T}
 
     PiecewiseQuadratic{T}()  where T = (x=new(); x.left_endpoint=Inf; x.next = x)
@@ -35,20 +35,20 @@ islast(λ::PiecewiseQuadratic) = λ.next.left_endpoint == Inf
 """
 Creates empty piecewise-quadratic polynomial consisting only of the list head
 """
-function create_new_pwq()
-    return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, PiecewiseQuadratic{Float64}())
+function create_new_pwq(T)
+    return PiecewiseQuadratic(QuadraticPolynomial(T[NaN,NaN,NaN]), T(NaN), PiecewiseQuadratic{T}())
 end
 
 """
 Creates piecewise-quadratic polynomial containing one element
 """
-function create_new_pwq(p::QuadraticPolynomial)
-    pwq = PiecewiseQuadratic(p, -Inf, PiecewiseQuadratic{Float64}())
-    return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, pwq)
+function create_new_pwq(p::QuadraticPolynomial{T}) where T
+    pwq = PiecewiseQuadratic(p, T(-Inf), PiecewiseQuadratic{T}())
+    return PiecewiseQuadratic(QuadraticPolynomial(T[NaN,NaN,NaN]), T(NaN), pwq)
 end
 
-function generate_PiecewiseQuadratic(args::Tuple...)
-    return PiecewiseQuadratic(QuadraticPolynomial([NaN,NaN,NaN]), NaN, _generate_PiecewiseQuadratic_helper(args...))
+function generate_PiecewiseQuadratic(args::Tuple{Vector{T},T}...) where T
+    return PiecewiseQuadratic(QuadraticPolynomial(T[NaN,NaN,NaN]), T(NaN), _generate_PiecewiseQuadratic_helper(args...))
 end
 
 

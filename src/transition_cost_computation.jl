@@ -34,7 +34,7 @@ Computes the transition costs `ℓ` given a discrete
 function `g`.
 """
 function compute_discrete_transition_costs(g::AbstractArray, t=1:length(g))
-    T = Float64
+    T = promote_type(eltype(g), Float64)
     ℓ_lazy = TransitionCostDiscrete{T}(g, t)
     N = length(t)
     ℓ = Array{QuadraticForm{T}}(N-1,N)

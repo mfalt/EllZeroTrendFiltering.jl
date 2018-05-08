@@ -260,7 +260,7 @@ function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
     for m=2:M
         #println("m: $m")
         for i=1:N-m
-            Λ_new = create_new_pwq()
+            Λ_new = create_new_pwq(T)
             if min(upper_bound, upper_bound_inner) < Inf
                 OPTIMIZE && add_quadratic!(Λ_new, QuadraticPolynomial{T}(0.0, 0.0, min(upper_bound,upper_bound_inner)))
             end
@@ -274,7 +274,7 @@ function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
                     DEBUG && println("Obtained ρ = $ρ")
 
                     ρmin = unsafe_minimum(ρ)
-                    if ρmin > upper_bound || ρmin > upper_bound_inner
+                    if OPTIMIZE && (ρmin > upper_bound || ρmin > upper_bound_inner)
                         DEBUG && println("Breaking due to that $ρmin > max($upper_bound, $upper_bound_inner)")
                         continue
                     end
@@ -296,7 +296,7 @@ function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
             if i == 1
                 if OPTIMIZE
                     upper_bound_inner = find_minimum_value(Λ[m,1])
-			upper_bound_inner += sqrt(eps())
+			        upper_bound_inner += sqrt(eps())
                 end
             end
         end
@@ -327,7 +327,7 @@ function pwq_dp_regularized{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
     ρ = QuadraticPolynomial{T}()
 
     for i=N-1:-1:1
-        Λ_new = create_new_pwq()
+        Λ_new = create_new_pwq(T)
         for ip=i+1:N
 
 
@@ -555,7 +555,8 @@ end
     Slightly unsafe since `tol` is ignored (not needed) on discrete problems
 """
 function get_transition_costs(g, t, lazy; tol=1e-3)
-    ℓ = lazy ? TransitionCostContinuous{Float64}(g, t, tol) :
+    T = Float64
+    ℓ = lazy ? TransitionCostContinuous{T}(g, t, tol) :
                compute_transition_costs(g, t, tol)
     # Continouous case, no cost at endpoint
     cost_last = zero(QuadraticPolynomial{Float64})
@@ -564,7 +565,8 @@ end
 
 # Discrete case, tol is not used here, but in signature to enable dispatch
 function get_transition_costs(g::AbstractArray, t, lazy; tol=1e-3)
-    ℓ = lazy ? TransitionCostDiscrete{Float64}(g, t) :
+    T = promote_type(eltype(g), Float64)
+    ℓ = lazy ? TransitionCostDiscrete{T}(g, t) :
                compute_discrete_transition_costs(g, t)
     if t[1] != 1 || t[end] != length(g)
         warn("In fit_pwl_constrained: The supplied grid t only covers the range ($(t[1]),$(t[end])) while the range of indices for g is (1,$(length(g))). No costs will be considered outside the range of t.")
