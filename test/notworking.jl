@@ -1,4 +1,5 @@
-@everywhere include(joinpath(Pkg.dir("EllZeroTrendFiltering"),"src","jl"))
+# TODO What is this?
+#@everywhere include(joinpath(dirname(@__FILE__),"..","src","jl"))
 
 @everywhere using Polynomials, IterTools, Plots
 
@@ -6,7 +7,7 @@ srand(9)
 N = 20
 ran = cumsum(0.1*randn(10*N))
 
-t = linspace(0,1,N)
+t = range(0, stop=1, length=N)
 
 g6(t) = ran[floor(Int64, t*10(N-1)+1)]
 ℓ = compute_transition_costs(g6, t);

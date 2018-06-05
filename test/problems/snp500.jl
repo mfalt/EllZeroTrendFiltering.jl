@@ -1,7 +1,7 @@
 function snp500()
 
 
-    data = readdlm(joinpath(Pkg.dir("EllZeroTrendFiltering"),"examples","data","snp500.txt"))
+    data = readdlm(joinpath(dirname(@__FILE__),"..","..","examples","data","snp500.txt"))
     g = data[1:300]
 
     M_bf = 2

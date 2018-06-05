@@ -12,7 +12,7 @@ using Interpolations
 t = 1:200
 srand(1)
 
-circle_segment(N) = sin.(acos.(linspace(-1, 1, N)))
+circle_segment(N) = sin.(acos.(range(-1, stop=1, length=N)))
 linear_trend(N) = (0:N-1)
 
 g_cll = [0.2*linear_trend(120) + circle_segment(120);
@@ -29,25 +29,25 @@ g_rand = () -> randn(200)
 
 g_walk = () -> cumsum(randn(200))
 
-g_square = linspace(0,4,200).^2
+g_square = range(0, stop=4, length=200).^2
 
-g_cube = linspace(0,4,200).^3
+g_cube = range(0, stop=4, length=200).^3
 
-g_4 = linspace(0,4,200).^4
+g_4 = range(0, stop=4, length=200).^4
 
-g_5 = linspace(0,4,200).^5
+g_5 = range(0, stop=4, length=200).^5
 
-g_exp = exp.(linspace(0,4,200))
+g_exp = exp.(range(0, stop=4, length=200))
 
-g_super_exp = exp.(linspace(0,3,200).^2)
+g_super_exp = exp.(range(0, stop=3, length=200).^2)
 
-g_super_exp2 = [exp.(linspace(0,2,100).^2) ; exp.(linspace(2,0.5,100).^2)]
+g_super_exp2 = [exp.(range(0, stop=2, length=100).^2)   ;  exp.(range(2, stop=0.5, length=100).^2)]
 
-g_super_exp3 = [exp.(linspace(0,2,100).^2) ; -exp.(linspace(2,0.5,100).^2)]
+g_super_exp3 = [exp.(range(0, stop=2, length=100).^2)   ; -exp.(range(2, stop=0.5, length=100).^2)]
 
-g_super_exp4 = [exp.(linspace(2,0.5,100).^2) ; exp.(linspace(0,2,100).^2)]
+g_super_exp4 = [exp.(range(2, stop=0.5, length=100).^2) ;  exp.(range(0, stop=2, length=100).^2)]
 
-g_super_exp5 = [exp.(linspace(2,0,100).^2) ; 2-exp.(linspace(0,0,100).^2)]
+g_super_exp5 = [exp.(range(2, stop=0, length=100).^2)   ; 2-exp.(range(0, stop=0, length=100).^2)]
 
 function randlin(N)
     t_grid = cumsum( rand(10:25, N) )

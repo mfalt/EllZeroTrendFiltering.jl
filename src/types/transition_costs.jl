@@ -9,9 +9,9 @@ end
 
 function TransitionCostContinuous{T}(g, t::AbstractVector, tol=1e-3) where {T}
     N = length(t)
-    I_g =  zeros(N)
-    I_g2 = zeros(N)
-    I_tg = zeros(N)
+    I_g =  fill(zero(T), N)
+    I_g2 = fill(zero(T), N)
+    I_tg = fill(zero(T), N)
     for i=2:N
         I_g[i] = I_g[i-1] + quadgk(g, t[i-1], t[i], reltol=tol)[1]
         I_g2[i] = I_g2[i-1] + quadgk(τ -> g(τ)^2, t[i-1], t[i], reltol=tol)[1]
@@ -69,7 +69,7 @@ function TransitionCostDiscrete{T}(g::AbstractArray, t::TimeType=1:length(g)) wh
     end
 
     # The P-matrices only depend on the distance d=ip-i
-    P_matrices  = Vector{SMatrix{2,2,T,4}}(N-1)
+    P_matrices  = Vector{SMatrix{2,2,T,4}}(undef, N-1)
     P_matrices[1] = @SMatrix [1.0 0; 0 0]
     for d=2:N-1
         off_diag_elems = sum([k*(d - k) for k=0:d-1])

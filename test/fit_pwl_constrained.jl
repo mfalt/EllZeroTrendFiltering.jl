@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 using EllZeroTrendFiltering
 
 
@@ -15,8 +15,8 @@ for problem_fcn in ["discontinuous1",
                     "exponential",
                     "straight_line"]
 
-    include(joinpath(Pkg.dir("EllZeroTrendFiltering"),"test","problems", problem_fcn * ".jl"))
-
+    include(joinpath(dirname(@__FILE__),"problems", problem_fcn * ".jl"))
+    local g, I_sols  # TODO, can remove in julia 1.0?
     g, ζ_vec, I_sols, f_sols = @eval $(Symbol(problem_fcn))()
 
     M = length(I_sols)

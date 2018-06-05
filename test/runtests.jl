@@ -1,5 +1,6 @@
 using EllZeroTrendFiltering
-using Base.Test
+using Test, Random, LinearAlgebra
+import Printf: @printf
 
 tests = [
     "quadratic_polynomials.jl",

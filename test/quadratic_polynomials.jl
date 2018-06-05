@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 using EllZeroTrendFiltering: unsafe_minimum
 
 # Subtraction of quadratic polynomials

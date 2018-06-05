@@ -23,10 +23,10 @@ end
 Constructs piece of quadratic polynomial poiting to NULL, i.e.
 a rightmost segment, or one that has not been inserted into a piecewise quadratic
 """
-function PiecewiseQuadratic{T}(p::QuadraticPolynomial{T}, left_endpoint)
+function PiecewiseQuadratic(p::QuadraticPolynomial{T}, left_endpoint) where T
     PiecewiseQuadratic{T}(p, left_endpoint, PiecewiseQuadratic{T}())
 end
-function PiecewiseQuadratic{T}(p::QuadraticPolynomial{T}, left_endpoint, next::PiecewiseQuadratic{T})
+function PiecewiseQuadratic(p::QuadraticPolynomial{T}, left_endpoint, next::PiecewiseQuadratic{T}) where T
     PiecewiseQuadratic{T}(p, left_endpoint, next)
 end
 
@@ -61,9 +61,9 @@ function _generate_PiecewiseQuadratic_helper(arg, args...)
 end
 
 #If head has NaN left_endpoint, assume empty dummy head
-start{T}(pwq::PiecewiseQuadratic{T}) = isnan(pwq.left_endpoint) ? pwq.next : pwq
-done{T}(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) = (iterstate.left_endpoint == Inf)
-next{T}(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) = (iterstate, iterstate.next)
+start(pwq::PiecewiseQuadratic{T}) where T = isnan(pwq.left_endpoint) ? pwq.next : pwq
+done(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) where T = (iterstate.left_endpoint == Inf)
+next(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) where T = (iterstate, iterstate.next)
 
 
 # For trouble-shooting etc.
@@ -83,7 +83,7 @@ function getindex(Λ::PiecewiseQuadratic, n::Integer)
 end
 
 
-function insert{T}(pwq::PiecewiseQuadratic{T}, p::QuadraticPolynomial, left_endpoint)
+function insert(pwq::PiecewiseQuadratic{T}, p::QuadraticPolynomial, left_endpoint) where T
     pwq.next = PiecewiseQuadratic(p, left_endpoint, pwq.next)
     return pwq.next
 end
@@ -91,7 +91,7 @@ end
 # Delete the node after pwq and return the node that will follow after
 # pwq after the deletion
 #OBS This function is unsafe if pwq.next does not exist
-function delete_next{T}(pwq::PiecewiseQuadratic{T})
+function delete_next(pwq::PiecewiseQuadratic{T}) where T
     pwq.next = pwq.next.next
     return pwq.next
 end
@@ -110,7 +110,7 @@ function length(pwq::PiecewiseQuadratic)
 end
 
 
-function show{T}(io::IO, Λ::PiecewiseQuadratic{T})
+function show(io::IO, Λ::PiecewiseQuadratic{T}) where T
     print(io, "PiecewiseQuadratic{$T} with $(length(Λ)) elements:\n")
 
     for λ in Λ
@@ -142,8 +142,8 @@ function (Λ::PiecewiseQuadratic)(x::Number)
     return NaN
 end
 
-function (Λ::PiecewiseQuadratic)(x::AbstractArray)
-    y = zeros(x)
+function (Λ::PiecewiseQuadratic{T1})(x::AbstractArray{T2}) where {T1,T2}
+    y = fill(promote_type(T1,T2), length(x))
     for λ in Λ
         inds = λ.left_endpoint .<= x .< get_right_endpoint(λ)
         y[inds] .= λ.π.(x[inds])
@@ -184,7 +184,7 @@ function get_vals(Λ::PiecewiseQuadratic)
             right_endpoint = 10.
         end
 
-        y_grid = linspace(left_endpoint, right_endpoint)
+        y_grid = range(left_endpoint, stop=right_endpoint, length=50)
         vals =  λ.π.(y_grid)
         append!(x, y_grid)
         append!(y, vals)

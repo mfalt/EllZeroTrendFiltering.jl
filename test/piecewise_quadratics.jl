@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 using EllZeroTrendFiltering: add_quadratic!
 
 global const TEST_PRINT_LEVEL = 0

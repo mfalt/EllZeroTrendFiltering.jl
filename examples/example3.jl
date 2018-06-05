@@ -3,6 +3,7 @@ using Convex
 using Mosek
 using SCS
 using Interpolations
+using DelimitedFiles
 
 # This is a julia implementaiton of an example
 # from "ℓ1 Trend Filtering" by Kim et al (2009)
@@ -34,7 +35,7 @@ function is_local_max(y)
 end
 
 #---
-data = readdlm(joinpath(Pkg.dir("EllZeroTrendFiltering"),"examples","data","snp500.txt"))
+data = readdlm(joinpath(joinpath(dirname(@__FILE__),"data",,"snp500.txt"))
 
 N = length(data)
 H =  spdiagm((ones(N-2), -2*ones(N-2), ones(N-2)), (0,1,2))
@@ -85,7 +86,7 @@ plot!(I, Y, color="red", linewidth=3)
 plot!(I_l1, Y_l1, l=(:cyan, :dash), linewidth=3)
 #---
 
-λ_vec = logspace(1,4,60)
+λ_vec = 10 .^ range(1, stop=4, length=60)
 cost = zeros(length(λ_vec), 10)
 
 for (k, λ)=enumerate(λ_vec)

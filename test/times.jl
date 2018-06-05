@@ -1,12 +1,12 @@
 using Plots
 plotly()
 
-data = readdlm(joinpath(Pkg.dir("EllZeroTrendFiltering"),"examples","data","snp500.txt"))
+data = readdlm(joinpath(dirname(@__FILE__),"..","examples","data","snp500.txt"))
 N = 2000
 
 
 Ns = vcat(collect.([2:100; 100:10:1000; 1100:100:2000])...)
-times = Array{Float64}(length(Ns))
+times = Array{Float64}(undef, length(Ns))
 
 N = 2000
 M = 15

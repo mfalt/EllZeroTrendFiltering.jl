@@ -1,4 +1,4 @@
-using Base.Test, EllZeroTrendFiltering
+using Test, EllZeroTrendFiltering
 using Interpolations
 
 srand(31415)
@@ -21,7 +21,7 @@ end
 #     then evaluated using the above auxilliary function
 # (2) simple linear interpolation
 
-g1 = sin.(linspace(0,π,50))
+g1 = sin.(range(0, stop=π, length=50))
 I1 = [1,10,30,40,50]
 Y1 = g1[I1]
 t_ss1 = [1, 10, 21, 33, 50]

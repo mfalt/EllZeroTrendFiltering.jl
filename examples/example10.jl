@@ -8,9 +8,9 @@ I_tg = rand(N)
 
 ℓ = EllZeroTrendFiltering.TransitionCostContinuous{Float64}(t, I_g, I_g2, I_tg)
 
-#ℓ = compute_transition_costs(x -> exp(2^x), linspace(0,2,N))
+#ℓ = compute_transition_costs(x -> exp(2^x), range(0, stop=2, length=N))
 
-ℓ = compute_transition_costs(x -> exp(x^2), linspace(0,1,20))
+ℓ = compute_transition_costs(x -> exp(x^2), range(0, stop=1, length=20))
 
 V_N = QuadraticPolynomial(0.0, 0.0, 0.0)
 

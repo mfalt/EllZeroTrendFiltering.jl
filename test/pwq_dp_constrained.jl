@@ -1,6 +1,6 @@
-using Base.Test, EllZeroTrendFiltering
+using Test, EllZeroTrendFiltering
 
-t = linspace(0,4π,50)
+t = range(0, stop=4π, length=50)
 g = sin
 
 @time ℓ = compute_transition_costs(g, t);
@@ -46,7 +46,7 @@ end
     I, _, f_reg = recover_optimal_index_set(Λ_reg[1])
 
     # Use the costs above to find out how many segments the solution should contain
-    m_expected = indmin([f_costs[m] + m*ζ for m=1:5])
+    m_expected = argmin([f_costs[m] + m*ζ for m=1:5])
 
     @test m_expected == length(I) - 1
     @test I ∈ I_sols[m_expected]
