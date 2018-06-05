@@ -59,7 +59,7 @@ Find best continouous piecewise approximations with cost ζ per breakpoint.
 using EllZeroTrendFiltering, Plots
 
 g(x) = sin(x) + 0.5sin(3.5x) + 0.5sin(5.1x)
-t = range(0,2π,2π)
+t = range(0, stop=2π, length=201)
 
 plot(g, t, l=(2,:black), lab="sin(x) + 0.5sin(3.5x) + 0.5sin(5.1x)")
 for ζ ∈ [0.1, 0.002]

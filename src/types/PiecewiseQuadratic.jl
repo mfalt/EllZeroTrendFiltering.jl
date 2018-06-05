@@ -142,8 +142,8 @@ function (Λ::PiecewiseQuadratic)(x::Number)
     return NaN
 end
 
-function (Λ::PiecewiseQuadratic{T1})(x::AbstractArray{T2}) where {T1,T2}
-    y = fill(promote_type(T1,T2), length(x))
+function (Λ::PiecewiseQuadratic{T1})(x::AbstractArray) where T1
+    y = fill(zero(promote_type(T1,eltype(x))), length(x))
     for λ in Λ
         inds = λ.left_endpoint .<= x .< get_right_endpoint(λ)
         y[inds] .= λ.π.(x[inds])

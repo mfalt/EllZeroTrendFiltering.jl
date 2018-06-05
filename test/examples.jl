@@ -3,7 +3,7 @@ using Test, Pkg
 
 #SNP example
 N = 400
-data = snp500_data()
+data = snp500_data()[1:N]
 
 M = 10
 @testset "Examples lazy=$lazy" for lazy in [true, false]
@@ -32,7 +32,7 @@ M = 10
     #Sin example
     g_(x) = sin(x) + 0.5sin(3.5x) + 0.5sin(5.1x)
     local t # TODO, can remove in julia 1.0?
-    t = range(0, stop=2π, length=50)
+    t = range(0, stop=2π, length=201)
 
 
     ζ = 0.1
