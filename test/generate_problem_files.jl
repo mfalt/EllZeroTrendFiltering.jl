@@ -83,5 +83,5 @@ end
 #
 # Y, f = EllZeroTrendFiltering.find_optimal_y_values(ℓ, V_N, I)
 #
-# y = interpolate((I,), Y, Gridded(Linear()))[1:length(g)]
+# y = interpolate((I,), Y, Gridded(Linear()))(1:length(g))
 # cost2 = sum((y[1:end]-g[1:end]).^2) # Note: cost at i=N should not be included

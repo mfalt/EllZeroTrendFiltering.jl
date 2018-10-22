@@ -11,10 +11,11 @@ export snp500_data
 import Base.-
 import Base.+
 import Base.show
-import Base.Operators
-import Base: start, next, done, length, zero, getindex, ==
+import Base: iterate, length, zero, getindex, ==
 
 import IterTools
+
+
 
 using StaticArrays
 using QuadGK

@@ -60,10 +60,13 @@ function _generate_PiecewiseQuadratic_helper(arg, args...)
     return PiecewiseQuadratic(QuadraticPolynomial(arg[1]), arg[2],  _generate_PiecewiseQuadratic_helper(args...))
 end
 
-#If head has NaN left_endpoint, assume empty dummy head
-start(pwq::PiecewiseQuadratic{T}) where T = isnan(pwq.left_endpoint) ? pwq.next : pwq
-done(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) where T = (iterstate.left_endpoint == Inf)
-next(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) where T = (iterstate, iterstate.next)
+function Base.iterate(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}=pwq.next) where T
+    if (iterstate.left_endpoint == Inf)
+        return nothing
+    end
+
+    return (iterstate, iterstate.next)
+end
 
 
 # For trouble-shooting etc.

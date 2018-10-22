@@ -7,8 +7,8 @@ struct ZeroDeviation <: FunctionDeviation end
 (f::ZeroDeviation)(x) = 0
 deviationcost(f::ZeroDeviation) = 0
 
-""" Zig-zag function
-"""
+# Zig-zag function
+#
 struct TriangleDeviation <: FunctionDeviation
     y1::Float64
     y2::Float64
@@ -57,7 +57,7 @@ function testfunction(Xsol, Ysol, intermediate)
     return f, t, extra_cost
 end
 
-srand(12345)
+Random.seed!(12345)
 
 function random_problem(segments)
     Msol = segments - 1

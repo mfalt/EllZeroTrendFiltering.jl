@@ -1,7 +1,7 @@
 using Test, EllZeroTrendFiltering
 using Interpolations
 
-srand(31415)
+Random.seed!(31415)
 
 # Auxilliary function for evaluating the approximation error for a specific
 # piecewise linear approximation (I, Y), given the transition costs ℓ
@@ -46,7 +46,7 @@ for (g, I, Y, t_subsampled) in ((g1, I1, Y1, t_ss1), (g2, I2, Y2, t_ss2), (g3, I
     ℓ = compute_discrete_transition_costs(g)
     cost1 = compute_cost(ℓ,I,Y)
 
-    y = interpolate((I,), Y, Gridded(Linear()))[1:length(g)]
+    y = interpolate((I,), Y, Gridded(Linear()))(1:length(g))
     cost2 = sum((y[1:end-1]-g[1:end-1]).^2) # Note: cost at i=N should not be included
 
     @test cost1 ≈ cost2

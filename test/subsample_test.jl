@@ -2,7 +2,7 @@ using EllZeroTrendFiltering, Test
 
 include(joinpath(dirname(@__FILE__),"auxilliary_test_fcns.jl"))
 
-srand(1234)
+Random.seed!(1234)
 
 # Brute force up to nbr segments:
 M = 7
