@@ -19,8 +19,6 @@ for problem_fcn in ["discontinuous1",
     local g, I_sols  # TODO, can remove in julia 1.0?
     g, ζ_vec, I_sols, f_sols = @eval $(Symbol(problem_fcn))()
 
-    ζ = 0.01
-
     @testset "Data set: $problem_fcn, regularization with ζ=$ζ" for ζ in ζ_vec
 
         I_reg, _, f_reg = fit_pwl_regularized(g, ζ)

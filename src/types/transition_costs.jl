@@ -13,9 +13,9 @@ function TransitionCostContinuous{T}(g, t::AbstractVector, tol=1e-3) where {T}
     I_g2 = fill(zero(T), N)
     I_tg = fill(zero(T), N)
     for i=2:N
-        I_g[i] = I_g[i-1] + quadgk(g, t[i-1], t[i], reltol=tol)[1]
-        I_g2[i] = I_g2[i-1] + quadgk(τ -> g(τ)^2, t[i-1], t[i], reltol=tol)[1]
-        I_tg[i] = I_tg[i-1] + quadgk(τ -> τ*g(τ), t[i-1], t[i], reltol=tol)[1]
+        I_g[i] = I_g[i-1] + quadgk(g, t[i-1], t[i], rtol=tol)[1]
+        I_g2[i] = I_g2[i-1] + quadgk(τ -> g(τ)^2, t[i-1], t[i], rtol=tol)[1]
+        I_tg[i] = I_tg[i-1] + quadgk(τ -> τ*g(τ), t[i-1], t[i], rtol=tol)[1]
     end
     TransitionCostContinuous{T}(t, I_g, I_g2, I_tg)
 end
