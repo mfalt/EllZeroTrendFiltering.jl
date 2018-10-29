@@ -19,7 +19,7 @@ M = 10
 @time Λ =  pwq_dp_constrained(ℓ, V_N, M)
 
 
-unique_polys(Λ) = length(unique([λ.π for λ in Λ]))
+unique_polys(Λ) = length(unique([λ.p for λ in Λ]))
 
 sizes = [(isassigned(Λ,i,j) ? unique_polys(Λ[i,j]) : 0) for i = 1:size(Λ,1), j = 1:size(Λ,2)]
 sizes = [(isassigned(Λ,i,j) ? length(Λ[i,j]) : 0) for i = 1:size(Λ,1), j = 1:size(Λ,2)]

@@ -13,7 +13,7 @@ cost_last = QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
 
 start_time = time()
 
-@time Λ = pwq_dp_constrained(ℓ, cost_last, 10, 1.65)
+Λ = pwq_dp_constrained(ℓ, cost_last, 10, 1.65)
 println("Time: ", time()-start_time)
 
 for k=3:10

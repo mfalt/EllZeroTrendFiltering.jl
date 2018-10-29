@@ -11,7 +11,7 @@ Note that the first element of the list is sometimes assumed to be a list head w
 The list/element `x` is the last element in the list when `x.next === x` or `x.next.left_endpoint==Inf`.
 """
 mutable struct PiecewiseQuadratic{T}
-    π::QuadraticPolynomial{T}
+    p::QuadraticPolynomial{T}
     left_endpoint::T
     next::PiecewiseQuadratic{T}
 
@@ -130,7 +130,7 @@ function show(io::IO, Λ::PiecewiseQuadratic{T}) where T
         end
 
         print(io, "\t  :   ")
-        show(io, λ.π)
+        show(io, λ.p)
         print(io, "\n")
     end
     return
@@ -139,7 +139,7 @@ end
 function (Λ::PiecewiseQuadratic)(x::Number)
     for λ in Λ
         if λ.left_endpoint <= x < get_right_endpoint(λ)
-            return λ.π(x)
+            return λ.p(x)
         end
     end
     return NaN
@@ -149,7 +149,7 @@ function (Λ::PiecewiseQuadratic{T1})(x::AbstractArray) where T1
     y = fill(zero(promote_type(T1,eltype(x))), length(x))
     for λ in Λ
         inds = λ.left_endpoint .<= x .< get_right_endpoint(λ)
-        y[inds] .= λ.π.(x[inds])
+        y[inds] .= λ.p.(x[inds])
     end
     return y
 end
@@ -188,7 +188,7 @@ function get_vals(Λ::PiecewiseQuadratic)
         end
 
         y_grid = range(left_endpoint, stop=right_endpoint, length=50)
-        vals =  λ.π.(y_grid)
+        vals =  λ.p.(y_grid)
         append!(x, y_grid)
         append!(y, vals)
         push!(x_all, y_grid)
@@ -220,25 +220,25 @@ function find_minimum(Λ::PiecewiseQuadratic)
     # TODO: True?
 
     f_opt = Inf
-    π_opt = typeof(Λ.π)()
+    p_opt = typeof(Λ.p)()
     x_opt = NaN
 
     for λ in Λ
-        x, f = find_minimum(λ.π)
+        x, f = find_minimum(λ.p)
         if f < f_opt
             f_opt = f
             x_opt = x
-            π_opt = λ.π
+            p_opt = λ.p
         end
     end
-    return π_opt, x_opt, f_opt
+    return p_opt, x_opt, f_opt
 end
 
 function find_minimum_value(Λ::PiecewiseQuadratic)
     f_opt = Inf
 
     for λ in Λ
-        _, f = find_minimum(λ.π)
+        _, f = find_minimum(λ.p)
         if f < f_opt
             f_opt = f
         end
