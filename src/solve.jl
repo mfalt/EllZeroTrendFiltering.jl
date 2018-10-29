@@ -1,15 +1,15 @@
 
 """
-    add_quadratic!(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}) where {T}
-Inserts a quadratic polynomial ρ into the linked list `Λ`, which represents a piecewise
+    add_quadratic!(Λ::PiecewiseQuadratic{T}, μ::QuadraticPolynomial{T}) where {T}
+Inserts a quadratic polynomial μ into the linked list `Λ`, which represents a piecewise
 quadratic polynomial, so that the new `Λ` satisfies
-`Λ(y) := min{ Λ(y) ,ρ(y) } ∀ y`
+`Λ(y) := min{ Λ(y) ,μ(y) } ∀ y`
 """
-function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T})
+function add_quadratic!(Λ::PiecewiseQuadratic{T}, μ::QuadraticPolynomial{T}) where T
 
     if Λ.next.left_endpoint == Inf # I.e. the piecewise quadratic object is empty, perhaps better to add dummy polynomial
-        ρ.has_been_used = true
-        insert(Λ, ρ, -Inf) # FIXME: Is specific insert function needed?
+        μ.has_been_used = true
+        insert(Λ, μ, -Inf) # FIXME: Is specific insert function needed?
         return
     end
 
@@ -24,13 +24,13 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
         right_endpoint = get_right_endpoint(λ_curr)
 
 
-        Δa = ρ.a - λ_curr.π.a
-        Δb = ρ.b - λ_curr.π.b
-        Δc = ρ.c - λ_curr.π.c
+        Δa = μ.a - λ_curr.p.a
+        Δb = μ.b - λ_curr.p.b
+        Δc = μ.c - λ_curr.p.c
 
         b2_minus_4ac =  Δb^2 - 4*Δa*Δc
 
-        if Δa > 0 # ρ has greater curvature, i.e., ρ is smallest in the middle if intersect
+        if Δa > 0 # μ has greater curvature, i.e., μ is smallest in the middle if intersect
             if b2_minus_4ac <= ACCURACY
                 # Zero (or one) intersections, old quadratic is smallest, just step forward
                 DEBUG && println("No intersections, old quadratic is smallest, Δa > 0, breaking.")
@@ -53,27 +53,27 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
                     break # There will be no more intersections since Δa > 0
                 elseif root1 <= left_endpoint && root2 >= right_endpoint
                     DEBUG && println("One intersections on either side, new quadratic is smallest")
-                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
                 elseif root1 > left_endpoint && root2 < right_endpoint
                     DEBUG && println("Two intersections: old-new-old")
-                    λ_prev, λ_curr = update_segment_old_new_old(λ_curr, ρ, root1, root2)
+                    λ_prev, λ_curr = update_segment_old_new_old(λ_curr, μ, root1, root2)
                     break # There will be no more intersections since Δa > 0
                 elseif root1 > left_endpoint
                     DEBUG && println("Root 1 within the interval: old-new")
-                    λ_prev, λ_curr = update_segment_old_new(λ_curr, ρ, root1)
+                    λ_prev, λ_curr = update_segment_old_new(λ_curr, μ, root1)
                 elseif root2 < right_endpoint
                     DEBUG && println("Root 2 within the interval: new-old")
-                    λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, ρ, root2)
+                    λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, μ, root2)
                     break # There will be no more intersections since Δa > 0
                 else
                     error("Shouldn't end up here")
                 end
             end
 
-        elseif Δa < 0 # ρ has lower curvature, i.e., ρ is smallest on the sides
+        elseif Δa < 0 # μ has lower curvature, i.e., μ is smallest on the sides
             if b2_minus_4ac <= ACCURACY
                 # Zero (or one) roots
-                λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
+                λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
             else
                 # Compute the intersections
                 term1 = -(Δb / 2 / Δa)
@@ -83,30 +83,30 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
 
                 # Check where the intersections are and act accordingly
                 if root1 >= right_endpoint || root2 <= left_endpoint
-                    # No intersections, ρ is smallest
-                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
+                    # No intersections, μ is smallest
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
                 elseif root1 <= left_endpoint && root2 >= right_endpoint
                     # No intersections, old quadratic is smallest, just step forward
                     λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
                 elseif root1 > left_endpoint && root2 < right_endpoint
                     # Two intersections within the interval
-                    λ_prev, λ_curr = update_segment_new_old_new(λ_prev, λ_curr, ρ, root1, root2)
+                    λ_prev, λ_curr = update_segment_new_old_new(λ_prev, λ_curr, μ, root1, root2)
                 elseif root1 > left_endpoint
-                    λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, ρ, root1)
+                    λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, μ, root1)
                 elseif root2 < right_endpoint
-                    λ_prev, λ_curr = update_segment_old_new(λ_curr, ρ, root2)
+                    λ_prev, λ_curr = update_segment_old_new(λ_curr, μ, root2)
                 else
                     error("Shouldn't end up here")
                 end
             end
         else # Δa == 0.0
             DEBUG && println("Δa == 0")
-            DEBUG2 && println("Δa == 0 : $ρ")
+            DEBUG2 && println("Δa == 0 : $μ")
             if Δb == 0
                 if Δc >= 0
                     λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
                 else
-                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
                 end
                 continue
             end
@@ -116,18 +116,18 @@ function add_quadratic!{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}
                 if root < left_endpoint
                     λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
                 elseif root > right_endpoint
-                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
                 else
-                    λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, ρ, root)
+                    λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, μ, root)
                 end
             else
                 if root < left_endpoint
-                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, ρ)
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
                 elseif root > right_endpoint
                     λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
                 else
                     DEBUG2 && println("Special case")
-                    λ_prev, λ_curr = update_segment_old_new(λ_curr, ρ, root)
+                    λ_prev, λ_curr = update_segment_old_new(λ_curr, μ, root)
                 end
             end
         end
@@ -140,84 +140,84 @@ end
     return λ_curr, λ_curr.next
 end
 
-@inline function update_segment_new(λ_prev, λ_curr, ρ)
-    ρ.has_been_used = true # TODO: Could be moved to the second clause
-    if λ_prev.π === ρ
+@inline function update_segment_new(λ_prev, λ_curr, μ)
+    μ.has_been_used = true # TODO: Could be moved to the second clause
+    if λ_prev.p === μ
         λ_prev.next = λ_curr.next
         v1, v2 = λ_prev, λ_curr.next
     else
-        λ_curr.π = ρ
+        λ_curr.p = μ
         v1, v2 = λ_curr, λ_curr.next
     end
     return v1, v2
 end
 
-@inline function update_segment_old_new(λ_curr, ρ, root)
+@inline function update_segment_old_new(λ_curr, μ, root)
     # ... λ_curr | λ_new ...
-    ρ.has_been_used = true
-    λ_new =  PiecewiseQuadratic(ρ, root, λ_curr.next)
+    μ.has_been_used = true
+    λ_new =  PiecewiseQuadratic(μ, root, λ_curr.next)
     λ_curr.next = λ_new
     return λ_new, λ_new.next
 end
 
-@inline function update_segment_new_old(λ_prev, λ_curr, ρ, root)
+@inline function update_segment_new_old(λ_prev, λ_curr, μ, root)
     # ... λ_prev | (new segment) | λ_curr ...
-    if λ_prev.π === ρ
+    if λ_prev.p === μ
         λ_curr.left_endpoint = root
     else
-        ρ.has_been_used = true
-        λ_prev.next = PiecewiseQuadratic(ρ, λ_curr.left_endpoint, λ_curr)
+        μ.has_been_used = true
+        λ_prev.next = PiecewiseQuadratic(μ, λ_curr.left_endpoint, λ_curr)
         λ_curr.left_endpoint = root
     end
     return λ_curr, λ_curr.next
 end
 
-@inline function update_segment_new_old_new(λ_prev, λ_curr, ρ, root1, root2)
-    # Insert new segments with ρ before and after λ_curr
+@inline function update_segment_new_old_new(λ_prev, λ_curr, μ, root1, root2)
+    # Insert new segments with μ before and after λ_curr
     # ... λ_prev : (new segment) | λ_curr | (new segment) ...
-    # ( ρ.has_been_used = true is set inside the called funcitons )
-    update_segment_new_old(λ_prev, λ_curr, ρ, root1)
-    return update_segment_old_new(λ_curr, ρ, root2)
+    # ( μ.has_been_used = true is set inside the called funcitons )
+    update_segment_new_old(λ_prev, λ_curr, μ, root1)
+    return update_segment_old_new(λ_curr, μ, root2)
 end
 
-@inline function update_segment_old_new_old(λ_curr, ρ, root1, root2)
+@inline function update_segment_old_new_old(λ_curr, μ, root1, root2)
     # ... λ_curr | λ_1  | λ_2 ...
     # The second new piece contains a copy of the polynomial in λ_curr
 
-    ρ.has_been_used = true
-    λ_2 =  PiecewiseQuadratic(λ_curr.π, root2, λ_curr.next)
-    λ_1 =  PiecewiseQuadratic(ρ, root1, λ_2)
+    μ.has_been_used = true
+    λ_2 =  PiecewiseQuadratic(λ_curr.p, root2, λ_curr.next)
+    λ_1 =  PiecewiseQuadratic(μ, root1, λ_2)
     λ_curr.next = λ_1
     return λ_2, λ_2.next
 end
 
 """
-    ρ = minimize_wrt_x2(qf::QuadraticForm{T}, p::QuadraticPolynomial{T}, ρ=QuadraticPolynomial{T}()) where {T}
+    μ = minimize_wrt_x2(qf::QuadraticForm{T}, p::QuadraticPolynomial{T}, μ=QuadraticPolynomial{T}()) where {T}
 Takes a quadratic form in `[x₁; x₂]` and a polynomial in `x₂`
 and returns the minimum of the sum wrt to `x₂`,
-i.e. ρ(x₁) = min_x₂{ qf(x₁,x₂) +  p(x₂) }`
+i.e. μ(x₁) = min_x₂{ qf(x₁,x₂) +  p(x₂) }`
 
-The input `ρ` can be pre-allocated on input and will then be changed.
+The input `μ` can be pre-allocated on input and will then be changed.
 """
-@inline function minimize_wrt_x2{T}(qf::QuadraticForm{T}, π::QuadraticPolynomial{T}, ρ=QuadraticPolynomial{T}())
+@inline function minimize_wrt_x2(qf::QuadraticForm{T}, p::QuadraticPolynomial{T}, μ=QuadraticPolynomial{T}()) where T
     P = qf.P
     q = qf.q
     r = qf.r
 
-    P22_new = P[2,2] + π.a
+    P22_new = P[2,2] + p.a
 
     if P22_new > 0
-        ρ.a = P[1,1] - P[1,2]^2 / P22_new
-        ρ.b = q[1] - P[1,2]*(q[2] + π.b) / P22_new
-        ρ.c = (r + π.c) - (q[2] + π.b)^2 / P22_new / 4
+        μ.a = P[1,1] - P[1,2]^2 / P22_new
+        μ.b = q[1] - P[1,2]*(q[2] + p.b) / P22_new
+        μ.c = (r + p.c) - (q[2] + p.b)^2 / P22_new / 4
     elseif P22_new == 0
-        ρ.a = P[1,1]
-        ρ.b = q[1]
-        ρ.c = r + π.c
+        μ.a = P[1,1]
+        μ.b = q[1]
+        μ.c = r + p.c
     else
         error("Piecewise quadratic cost should be positive (semi-)definite. Please submit a bug report.")
     end
-    return ρ
+    return μ
 end
 
 
@@ -236,65 +236,70 @@ s.t          f(k) being continuous piecewise linear with `m` segements.
 
 i.e. `Λ[m,i]` contains the best (in `ℓ` cost) continuous piecewise linear function `f` with up to `M` segments over the interval `i` to `N`
 """
-function pwq_dp_constrained{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf)
+function pwq_dp_constrained(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf) where T
     #global counter1
     #global counter2
     #counter1 = 0
     #counter2 = 0
 
     N = size(ℓ, 2)
-
     @assert M <= N-1 "Cannot have more segments than N-1."
 
-    Λ = Array{PiecewiseQuadratic{T}}(M, N)
+    Λ = Array{PiecewiseQuadratic{T}}(undef, M, N)
 
     for i=1:N-1
         p = minimize_wrt_x2(ℓ[i, N], V_N)
         p.time_index = N
-        Λ[1, i] .= create_new_pwq(p)
+        Λ[1, i] = create_new_pwq(p)
     end
 
-    ρ = QuadraticPolynomial{T}()
+    μ = QuadraticPolynomial{T}()
     upper_bound_inner = Inf
     global times
     for m=2:M
         #println("m: $m")
         for i=1:N-m
             Λ_new = create_new_pwq(T)
-            if min(upper_bound, upper_bound_inner) < Inf
-                OPTIMIZE && add_quadratic!(Λ_new, QuadraticPolynomial{T}(0.0, 0.0, min(upper_bound,upper_bound_inner)))
+            if OPTIMIZE
+                if min(upper_bound, upper_bound_inner) < Inf
+                    add_quadratic!(Λ_new, QuadraticPolynomial{T}(0.0, 0.0, min(upper_bound,upper_bound_inner)))
+                end
             end
-            #println("m: $m, i: $i")
+
             for ip=i+1:N-m+1
                 DEBUG && println("(m:$m, i:$i, ip:$ip)")
+
                 for λ in Λ[m-1, ip]
 
-                    minimize_wrt_x2(ℓ[i,ip], λ.π, ρ)
 
-                    DEBUG && println("Obtained ρ = $ρ")
+                    minimize_wrt_x2(ℓ[i,ip], λ.p, μ)
 
-                    ρmin = unsafe_minimum(ρ)
-                    if OPTIMIZE && (ρmin > upper_bound || ρmin > upper_bound_inner)
-                        DEBUG && println("Breaking due to that $ρmin > max($upper_bound, $upper_bound_inner)")
-                        continue
+                    DEBUG && println("Obtained μ = $μ")
+
+                    if OPTIMIZE
+                        μmin = unsafe_minimum(μ)
+                        if (μmin > upper_bound || μmin > upper_bound_inner)
+                            DEBUG && println("Breaking due to that $μmin > max($upper_bound, $upper_bound_inner)")
+                            continue
+                        end
                     end
 
                     DEBUG && println("Inserting...")
 
-                    add_quadratic!(Λ_new, ρ)
+                    add_quadratic!(Λ_new, μ)
 
-                    if ρ.has_been_used == true
-                        ρ.time_index = ip
-                        ρ.ancestor = λ.π
-                        ρ = QuadraticPolynomial{T}()
-                        ρ.has_been_used = false
+                    if μ.has_been_used == true
+                        μ.time_index = ip
+                        μ.ancestor = λ.p
+                        μ = QuadraticPolynomial{T}()
+                        μ.has_been_used = false
                     end
                 end
             end
             #remove_over(Λ_new, min(upper_bound_inner,upper_bound))
             Λ[m, i] = Λ_new
-            if i == 1
-                if OPTIMIZE
+            if OPTIMIZE
+                if i == 1
                     upper_bound_inner = find_minimum_value(Λ[m,1])
                     upper_bound_inner += sqrt(eps())
                 end
@@ -315,16 +320,16 @@ minimize ∑ ℓ_(i, i+1)(y, y+1)  +  V_N(y_M)  +  ζ⋅card(I)
 
 where ℓ are positive-definite quadratic forms.
 """
-function pwq_dp_regularized{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, ζ::T)
+function pwq_dp_regularized(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, ζ::T) where T
     N = size(ℓ, 2)
 
-    Λ = Vector{PiecewiseQuadratic{T}}(N)
+    Λ = Vector{PiecewiseQuadratic{T}}(undef, N)
 
     V_N = deepcopy(V_N)
     V_N.time_index = -1
     Λ[N] = create_new_pwq(V_N)
 
-    ρ = QuadraticPolynomial{T}()
+    μ = QuadraticPolynomial{T}()
 
     for i=N-1:-1:1
         Λ_new = create_new_pwq(T)
@@ -335,22 +340,22 @@ function pwq_dp_regularized{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
             for λ in Λ[ip]
                 #counter1 += 1
 
-                minimize_wrt_x2(ℓ[i,ip], λ.π, ρ)
-                ρ.c += ζ # add cost for break point
+                minimize_wrt_x2(ℓ[i,ip], λ.p, μ)
+                μ.c += ζ # add cost for break point
 
 
-                add_quadratic!(Λ_new, ρ)
+                add_quadratic!(Λ_new, μ)
 
-                if ρ.has_been_used
-                    ρ.time_index = ip
-                    ρ.ancestor = λ.π
-                    ρ = QuadraticPolynomial{T}()
-                    ρ.has_been_used = false
+                if μ.has_been_used
+                    μ.time_index = ip
+                    μ.ancestor = λ.p
+                    μ = QuadraticPolynomial{T}()
+                    μ.has_been_used = false
 
                     ζ_level_insertion = true
                 else
                     if ζ_level_insertion == false
-                        if !poly_minus_constant_is_greater(Λ_new, ρ, ζ)
+                        if !poly_minus_constant_is_greater(Λ_new, μ, ζ)
                             ζ_level_insertion = true
                         end
                     end
@@ -368,7 +373,7 @@ function pwq_dp_regularized{T}(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPol
 end
 
 
-function recover_optimal_index_set{T}(Λ::PiecewiseQuadratic{T}, first_index=1)
+function recover_optimal_index_set(Λ::PiecewiseQuadratic{T}, first_index=1) where T
 
     p, y, f = find_minimum(Λ)
 
@@ -396,7 +401,6 @@ end
 Given transition costs `ℓ`, cost of right endpoint `V_N`, and breakpoint indicies `I`
 the optimal y-values `Y` and the optimal cost `f` are computed.
 """
-
 function find_optimal_y_values(ℓ, V_N::QuadraticPolynomial, I)
     m = length(I) - 1
 
@@ -435,11 +439,11 @@ function recover_solution(Λ::PiecewiseQuadratic, ℓ, V_N::QuadraticPolynomial,
     f_regularized = f + ζ*(length(I)-1) # Include regularization cost
 
     if !isapprox(f_regularized, f_expected, atol=1e-10)
-        warn("Recovered cost ($f_regularized) is not what was expected from value function ($f_expected). Solution might be incorrect.")
+        @warn "Recovered cost ($f_regularized) is not what was expected from value function ($f_expected). Solution might be incorrect."
     end
 
     if f_regularized < 0
-        warn("Computed cost ($f_regularized) < 0, if ≈ 0, this is probably due to numerical errors and nothing to worry about.")
+        @warn "Computed cost ($f_regularized) < 0, if ≈ 0, this is probably due to numerical errors and nothing to worry about."
     end
 
     return I, Y, f
@@ -449,12 +453,11 @@ end
 
 
 """
-Given a piecewise quadratic V_Λ represented by Λ, a polynomial ρ, and a real number ζ
+Given a piecewise quadratic V_Λ represented by Λ, a polynomial μ, and a real number ζ
 this function evaluates if
-ρ(y) > V_Λ(y) + ζ  ∀ y
-"""
-# FIXME: Group polynomial and constant in tuple?
-function poly_minus_constant_is_greater{T}(Λ::PiecewiseQuadratic{T}, ρ::QuadraticPolynomial{T}, ζ::Real)
+μ(y) > V_Λ(y) + ζ  ∀ y
+""" # FIXME: Group polynomial and constant in tuple?
+function poly_minus_constant_is_greater(Λ::PiecewiseQuadratic{T}, μ::QuadraticPolynomial{T}, ζ::Real) where T
 
     if Λ.next.left_endpoint == Inf
         return false
@@ -465,13 +468,13 @@ function poly_minus_constant_is_greater{T}(Λ::PiecewiseQuadratic{T}, ρ::Quadra
         left_endpoint = λ_curr.left_endpoint
         right_endpoint = get_right_endpoint(λ_curr)
 
-        Δa = ρ.a - λ_curr.π.a
-        Δb = ρ.b - λ_curr.π.b
-        Δc = (ρ.c - ζ) - λ_curr.π.c
+        Δa = μ.a - λ_curr.p.a
+        Δb = μ.b - λ_curr.p.b
+        Δc = (μ.c - ζ) - λ_curr.p.c
 
         b2_minus_4ac =  Δb^2 - 4*Δa*Δc
 
-        if Δa > 0 # ρ has greater curvature, i.e., ρ is smallest in the middle if intersect
+        if Δa > 0 # μ has greater curvature, i.e., μ is smallest in the middle if intersect
             #println("Δa > 0")
             if b2_minus_4ac <= 0
                 # Zero (or one) intersections, old quadratic is smallest, just step forward
@@ -494,7 +497,7 @@ function poly_minus_constant_is_greater{T}(Λ::PiecewiseQuadratic{T}, ρ::Quadra
                 end
             end
 
-        elseif Δa < 0 # ρ has lower curvature, i.e., ρ is smallest on the sides
+        elseif Δa < 0 # μ has lower curvature, i.e., μ is smallest on the sides
             #println("Δa < 0")
             if b2_minus_4ac <= 0
                 # Zero (or one) roots
@@ -507,14 +510,14 @@ function poly_minus_constant_is_greater{T}(Λ::PiecewiseQuadratic{T}, ρ::Quadra
 
                 # Check where the intersections are and act accordingly
                 if root1 <= left_endpoint && root2 >= right_endpoint
-                    # No intersection on either side of the interval, and ρ is smallest
+                    # No intersection on either side of the interval, and μ is smallest
                     continue
                 else
                     return false
                 end
             end
         else # Δa == 0.0
-            DEBUG2 && println("Δa == 0 : $ρ")
+            DEBUG2 && println("Δa == 0 : $μ")
             if Δb == 0
                 if Δc >= 0
 
@@ -569,7 +572,7 @@ function get_transition_costs(g::AbstractArray, t, lazy; tol=1e-3)
     ℓ = lazy ? TransitionCostDiscrete{T}(g, t) :
                compute_discrete_transition_costs(g, t)
     if t[1] != 1 || t[end] != length(g)
-        warn("In fit_pwl_constrained: The supplied grid t only covers the range ($(t[1]),$(t[end])) while the range of indices for g is (1,$(length(g))). No costs will be considered outside the range of t.")
+        @warn "In fit_pwl_constrained: The supplied grid t only covers the range ($(t[1]),$(t[end])) while the range of indices for g is (1,$(length(g))). No costs will be considered outside the range of t."
     end
     # Discrete case, so cost at endpoint is quadratic
     cost_last = QuadraticPolynomial(1.0, -2*g[t[end]], g[t[end]]^2)
@@ -589,10 +592,10 @@ Returns:
     `Y`: Vector of length `M`
     `v`: Float64
 such that the optimal function has breakpoints in `I` (or `t[I]`) and satisfies
-`f(I) .= Y` (or `f(t[I]) .= Y`).
+`f(I) .== Y` (or `f(t[I]) .== Y`).
 Kwargs:
 `t` is optional parameter in the discrete case, restricting the set of possible gridpoints,
-i.e. so that `f[t[I]] .= Y`.
+i.e. so that `f[t[I]] .== Y`.
 `lazy` = true, means that the internal transition costs `ℓ[i,j]` will be calculated when needed.
 `tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
 """
@@ -627,10 +630,10 @@ Returns:
     `Y`: Vector of length `M`
     `v`: Float64
 such that the optimal function has breakpoints in `I` (or `t[I]`) and satisfies
-`f(I) .= Y` (or `f(t[I]) .= Y`).
+`f(I) .== Y` (or `f(t[I]) .== Y`).
 Kwargs:
 `t` is optional parameter in the discrete case, restricting the set of possible gridpoints,
-i.e. so that `f[t[I]] .= Y`.
+i.e. so that `f[t[I]] .== Y`.
 `lazy` = true, means that the internal transition costs `ℓ[i,j]` will be calculated when needed.
 `tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
 """
@@ -645,12 +648,12 @@ function  fit_pwl_constrained(g, t, M, tol=1e-3; lazy=false)
     fit_pwl_constrained_internal(ℓ, cost_last, M)
 end
 
-function  fit_pwl_constrained_internal{T}(ℓ::AbstractTransitionCost{T}, cost_last, M)
+function  fit_pwl_constrained_internal(ℓ::AbstractTransitionCost{T}, cost_last, M) where T
     Λ = pwq_dp_constrained(ℓ, cost_last, M);
 
-    Ivec = Vector{Vector{Int}}(M)
-    Yvec = Vector{Vector{T}}(M)
-    fvec = Vector{T}(M)
+    Ivec = Vector{Vector{Int}}(undef, M)
+    Yvec = Vector{Vector{T}}(undef, M)
+    fvec = Vector{T}(undef, M)
 
     for m=1:M
         Ivec[m], Yvec[m], fvec[m] = recover_solution(Λ[m, 1], ℓ, cost_last)

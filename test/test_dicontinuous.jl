@@ -1,6 +1,6 @@
 function dp_discontinuous(C::Matrix{T}, M::Integer)
     N = size(C,2)
-    D = Array{PiecewiseQuadratic{T}}(N, M)
+    D = Array{PiecewiseQuadratic{T}}(undef, N, M)
 
     for m=2:M
         for i=1:N-m

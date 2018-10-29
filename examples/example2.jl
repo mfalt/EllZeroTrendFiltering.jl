@@ -1,24 +1,27 @@
 using IterTools
 using Plots
 using EllZeroTrendFiltering
+using DelimitedFiles
 
-data = readdlm(joinpath(Pkg.dir("EllZeroTrendFiltering"),"examples","data","snp500.txt"))
+data = readdlm(joinpath(joinpath(dirname(@__FILE__),"data","snp500.txt")))
 data = data[1:300]
 
 N = length(data)
 
-@time ℓ = DA.compute_discrete_transition_costs(data);
-cost_last = DA.QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
+@time ℓ = compute_discrete_transition_costs(data);
+cost_last = QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
 
 start_time = time()
-gc()
-@time Λ = pwq_dp_constrained(ℓ, cost_last, 10, 1.65);
+
+Λ = pwq_dp_constrained(ℓ, cost_last, 10, 1.65)
 println("Time: ", time()-start_time)
 
 for k=3:10
-    println(k, " : ", DA.recover_optimal_index_set(Λ[k, 1])[3])
+    println(k, " : ", recover_optimal_index_set(Λ[k, 1])[3])
 end
 ###
+
+
 
 @time I2, y2, f2 = recover_optimal_index_set(Λ[7, 1], 1, N)
 println(I2)

@@ -1,9 +1,9 @@
-using Base.Test
+using Test
 using EllZeroTrendFiltering: add_quadratic!
 
 global const TEST_PRINT_LEVEL = 0
 
-srand(27182)
+Random.seed!(27182)
 #---
 
 # Given a matrix with coefficients for quadratic polynomials this function
@@ -45,8 +45,8 @@ function verify_piecewise_quadratic(c_mat, show_plot=false)
             break
         end
 
-        TEST_PRINT_LEVEL > 0 && println("Continutiy diff: ", λ.π(x) - λ.next.π(x))
-        @test λ.π(x) ≈ λ.next.π(x)
+        TEST_PRINT_LEVEL > 0 && println("Continutiy diff: ", λ.p(x) - λ.next.p(x))
+        @test λ.p(x) ≈ λ.next.p(x)
     end
 
     # Check that the piecewise quadratic is smaller than all the quadratics
@@ -100,40 +100,40 @@ add_quadratic!(pwq2, p3)
 add_quadratic!(pwq2, p1)
 @test length(pwq2) == 4
 
-@test pwq1[1].π === pwq2[1].π == p1
+@test pwq1[1].p === pwq2[1].p == p1
 @test pwq1[2].left_endpoint == pwq2[2].left_endpoint == -1
-@test pwq1[2].π === pwq2[2].π == p2
+@test pwq1[2].p === pwq2[2].p == p2
 @test pwq1[3].left_endpoint == pwq2[3].left_endpoint == 0
-@test pwq1[3].π === pwq2[3].π
+@test pwq1[3].p === pwq2[3].p
 
 
 #---
 c_mat1 = [
-2.53106  1.59097   1.60448
-2.51349  0.681205  1.60553
-2.09364  0.714858  1.08607
-]
+    2.53106  1.59097   1.60448
+    2.51349  0.681205  1.60553
+    2.09364  0.714858  1.08607
+    ]
 verify_piecewise_quadratic(c_mat1)
 
 #---
 c_mat2 = [
-2.01532  1.59269   1.65765
-2.50071  1.56421   1.53899
-2.02767  0.706143  1.129
-]
+    2.01532  1.59269   1.65765
+    2.50071  1.56421   1.53899
+    2.02767  0.706143  1.129
+    ]
 verify_piecewise_quadratic(c_mat2)
 
 #---
 
 c_mat3 = [
-2.42298  0.796953  1.02011
-2.45055  1.32235   1.4894
-2.1762   0.855014  1.0647
-]
+    2.42298  0.796953  1.02011
+    2.45055  1.32235   1.4894
+    2.1762   0.855014  1.0647
+    ]
 verify_piecewise_quadratic(c_mat3)
 #---
 # Random test case
 N = 10
-c_mat_rand = [2+rand(N) 2*rand(N) 1+rand(N)]
+c_mat_rand = [2 .+ rand(N) 2*rand(N) 1 .+ rand(N)]
 
 verify_piecewise_quadratic(c_mat_rand)

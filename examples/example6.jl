@@ -60,7 +60,7 @@ opt_f = []
 
 
 ϵ_vec = [1e-5, 1e-6]
-max_cost_vec = logspace(log10(0.1), log10(8), 2)
+max_cost_vec = 10 .^ range(log10(0.1), stop=log10(8), length=2)
 
 
 sols_l1_mat = []
@@ -93,10 +93,10 @@ for (i, max_cost)=enumerate(max_cost_vec)
 end
 
 
-(I_sols_opt_vec, Y_sols_opt_vec, f_sols_opt_vec) = collect(zip(sols_opt...))
+I_sols_opt_vec, Y_sols_opt_vec, f_sols_opt_vec = collect(zip(sols_opt...))
 f_sols_opt_vec = [f_sols_opt_vec...]
 
-(I_sols_l1_vec, Y_sols_l1_vec, f_sols_l1_vec) = collect(zip(sols_l1_mat...))
+I_sols_l1_vec, Y_sols_l1_vec, f_sols_l1_vec = collect(zip(sols_l1_mat...))
 f_sols_l1_vec = [f_sols_l1_vec...]
 
 m_sols_l1_vec = [length.(I_sols_l1_vec)...]

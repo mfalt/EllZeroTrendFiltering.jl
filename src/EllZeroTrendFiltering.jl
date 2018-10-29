@@ -11,14 +11,20 @@ export snp500_data
 import Base.-
 import Base.+
 import Base.show
-import Base.Operators
-import Base: start, next, done, length, zero, getindex, ==
+import Base: iterate, length, zero, getindex, ==
 
 import IterTools
+
+
 
 using StaticArrays
 using QuadGK
 
+#StdLibrary
+using LinearAlgebra
+import DelimitedFiles: readdlm
+import Printf: @printf
+#Pkg, DelimitedFiles
 global const DEBUG = false
 global const DEBUG2 = false
 global const COUNTER_TEST = false
@@ -39,6 +45,6 @@ include("brute_force_search.jl")
 include("solve.jl")
 
 
-snp500_data() = readdlm(joinpath(Pkg.dir("EllZeroTrendFiltering"),"examples","data","snp500.txt"))
+snp500_data() = readdlm(joinpath(dirname(@__FILE__),"..","examples","data","snp500.txt"))
 
 end # module

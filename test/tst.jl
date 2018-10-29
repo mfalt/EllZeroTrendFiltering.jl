@@ -9,7 +9,7 @@ using IterTools
 
 N = 240
 
-t = linspace(0,4π,N)
+t = range(0, stop=4π, length=50)
 
 
 
@@ -54,7 +54,7 @@ for k = 7:7
     end
 
 
-    #x = linspace(0,1,100)
+    #x = range(0, stop=1, length=100)
 
     #closefig()
     plot!(t[I2],Y2, m=:circle, lab="k=$k")

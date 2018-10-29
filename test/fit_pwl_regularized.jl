@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 using EllZeroTrendFiltering
 
 
@@ -15,11 +15,9 @@ for problem_fcn in ["discontinuous1",
                     "exponential",
                     "straight_line"]
 
-    include(joinpath(Pkg.dir("EllZeroTrendFiltering"),"test","problems", problem_fcn * ".jl"))
-
+    include(joinpath(dirname(@__FILE__),"problems", problem_fcn * ".jl"))
+    local g, I_sols  # TODO, can remove in julia 1.0?
     g, ζ_vec, I_sols, f_sols = @eval $(Symbol(problem_fcn))()
-
-    ζ = 0.01
 
     @testset "Data set: $problem_fcn, regularization with ζ=$ζ" for ζ in ζ_vec
 
@@ -27,7 +25,7 @@ for problem_fcn in ["discontinuous1",
         # (the cost f_reg includes penality mζ)
 
         # Use costs in the solution file to find out how many segments the solution should contain
-        m_expected = indmin([f_sols[m] + m*ζ for m=1:length(f_sols)])
+        m_expected = argmin([f_sols[m] + m*ζ for m=1:length(f_sols)])
 
         @test m_expected == length(I_reg) - 1
         if !isempty(I_sols[m_expected]) # Only if there is a unique solution
@@ -41,7 +39,7 @@ for problem_fcn in ["discontinuous1",
     # Iterate only over problems where solution exists
     @testset "Data set: $problem_fcn, subsampled, regularization with ζ=$ζ" for ζ in ζ_vec
         # Use costs in the solution file to find out how many segments the solution should contain
-        m_expected = indmin([f_sols[m] + m*ζ for m=1:length(f_sols)])
+        m_expected = argmin([f_sols[m] + m*ζ for m=1:length(f_sols)])
 
         # Generate max(length(g)/5, m) random gridpoints in range 1:length(g)
         randI = shuffle(1:length(g))[1:max(floor(Int,length(g)/5), m_expected+1)]

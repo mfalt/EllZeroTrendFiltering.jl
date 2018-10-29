@@ -11,7 +11,7 @@ Note that the first element of the list is sometimes assumed to be a list head w
 The list/element `x` is the last element in the list when `x.next === x` or `x.next.left_endpoint==Inf`.
 """
 mutable struct PiecewiseQuadratic{T}
-    π::QuadraticPolynomial{T}
+    p::QuadraticPolynomial{T}
     left_endpoint::T
     next::PiecewiseQuadratic{T}
 
@@ -23,10 +23,10 @@ end
 Constructs piece of quadratic polynomial poiting to NULL, i.e.
 a rightmost segment, or one that has not been inserted into a piecewise quadratic
 """
-function PiecewiseQuadratic{T}(p::QuadraticPolynomial{T}, left_endpoint)
+function PiecewiseQuadratic(p::QuadraticPolynomial{T}, left_endpoint) where T
     PiecewiseQuadratic{T}(p, left_endpoint, PiecewiseQuadratic{T}())
 end
-function PiecewiseQuadratic{T}(p::QuadraticPolynomial{T}, left_endpoint, next::PiecewiseQuadratic{T})
+function PiecewiseQuadratic(p::QuadraticPolynomial{T}, left_endpoint, next::PiecewiseQuadratic{T}) where T
     PiecewiseQuadratic{T}(p, left_endpoint, next)
 end
 
@@ -60,10 +60,13 @@ function _generate_PiecewiseQuadratic_helper(arg, args...)
     return PiecewiseQuadratic(QuadraticPolynomial(arg[1]), arg[2],  _generate_PiecewiseQuadratic_helper(args...))
 end
 
-#If head has NaN left_endpoint, assume empty dummy head
-start{T}(pwq::PiecewiseQuadratic{T}) = isnan(pwq.left_endpoint) ? pwq.next : pwq
-done{T}(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) = (iterstate.left_endpoint == Inf)
-next{T}(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}) = (iterstate, iterstate.next)
+function Base.iterate(pwq::PiecewiseQuadratic{T}, iterstate::PiecewiseQuadratic{T}=pwq.next) where T
+    if (iterstate.left_endpoint == Inf)
+        return nothing
+    end
+
+    return (iterstate, iterstate.next)
+end
 
 
 # For trouble-shooting etc.
@@ -83,7 +86,7 @@ function getindex(Λ::PiecewiseQuadratic, n::Integer)
 end
 
 
-function insert{T}(pwq::PiecewiseQuadratic{T}, p::QuadraticPolynomial, left_endpoint)
+function insert(pwq::PiecewiseQuadratic{T}, p::QuadraticPolynomial, left_endpoint) where T
     pwq.next = PiecewiseQuadratic(p, left_endpoint, pwq.next)
     return pwq.next
 end
@@ -91,7 +94,7 @@ end
 # Delete the node after pwq and return the node that will follow after
 # pwq after the deletion
 #OBS This function is unsafe if pwq.next does not exist
-function delete_next{T}(pwq::PiecewiseQuadratic{T})
+function delete_next(pwq::PiecewiseQuadratic{T}) where T
     pwq.next = pwq.next.next
     return pwq.next
 end
@@ -110,7 +113,7 @@ function length(pwq::PiecewiseQuadratic)
 end
 
 
-function show{T}(io::IO, Λ::PiecewiseQuadratic{T})
+function show(io::IO, Λ::PiecewiseQuadratic{T}) where T
     print(io, "PiecewiseQuadratic{$T} with $(length(Λ)) elements:\n")
 
     for λ in Λ
@@ -127,7 +130,7 @@ function show{T}(io::IO, Λ::PiecewiseQuadratic{T})
         end
 
         print(io, "\t  :   ")
-        show(io, λ.π)
+        show(io, λ.p)
         print(io, "\n")
     end
     return
@@ -136,17 +139,17 @@ end
 function (Λ::PiecewiseQuadratic)(x::Number)
     for λ in Λ
         if λ.left_endpoint <= x < get_right_endpoint(λ)
-            return λ.π(x)
+            return λ.p(x)
         end
     end
     return NaN
 end
 
-function (Λ::PiecewiseQuadratic)(x::AbstractArray)
-    y = zeros(x)
+function (Λ::PiecewiseQuadratic{T1})(x::AbstractArray) where T1
+    y = fill(zero(promote_type(T1,eltype(x))), length(x))
     for λ in Λ
         inds = λ.left_endpoint .<= x .< get_right_endpoint(λ)
-        y[inds] .= λ.π.(x[inds])
+        y[inds] .= λ.p.(x[inds])
     end
     return y
 end
@@ -184,8 +187,8 @@ function get_vals(Λ::PiecewiseQuadratic)
             right_endpoint = 10.
         end
 
-        y_grid = linspace(left_endpoint, right_endpoint)
-        vals =  λ.π.(y_grid)
+        y_grid = range(left_endpoint, stop=right_endpoint, length=50)
+        vals =  λ.p.(y_grid)
         append!(x, y_grid)
         append!(y, vals)
         push!(x_all, y_grid)
@@ -217,25 +220,25 @@ function find_minimum(Λ::PiecewiseQuadratic)
     # TODO: True?
 
     f_opt = Inf
-    π_opt = typeof(Λ.π)()
+    p_opt = typeof(Λ.p)()
     x_opt = NaN
 
     for λ in Λ
-        x, f = find_minimum(λ.π)
+        x, f = find_minimum(λ.p)
         if f < f_opt
             f_opt = f
             x_opt = x
-            π_opt = λ.π
+            p_opt = λ.p
         end
     end
-    return π_opt, x_opt, f_opt
+    return p_opt, x_opt, f_opt
 end
 
 function find_minimum_value(Λ::PiecewiseQuadratic)
     f_opt = Inf
 
     for λ in Λ
-        _, f = find_minimum(λ.π)
+        _, f = find_minimum(λ.p)
         if f < f_opt
             f_opt = f
         end

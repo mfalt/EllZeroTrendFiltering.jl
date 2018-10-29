@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 using EllZeroTrendFiltering
 using Plots
 plotly()
@@ -6,7 +6,7 @@ plotly()
 include("write_problem_to_file.jl")
 include("auxilliary_test_fcns.jl")
 
-problem_data = Vector{Tuple{String,Any,Integer}}(10)
+problem_data = Vector{Tuple{String,Any,Integer}}(undef, 10)
 
 problem_data[1] = ("discontinuous1",
     [0.2*linear_trend(10) + circle_segment(10);
@@ -64,7 +64,7 @@ for (problem_name, g, M) in problem_data[10:end]
     @time I_vec, Y_vec, f_vec = brute_force_multi(g, M)
 
     # It should not be beneficial to use more segments than has been computed ...
-    ζ_vec = logspace(log10(f_vec[2]), log10(0.8*(max(f_vec[end-1] - f_vec[end], f_vec[end-1]))), 10)
+    ζ_vec = 10 .^ range(log10(f_vec[2]), stop=log10(0.8*(max(f_vec[end-1] - f_vec[end], f_vec[end-1]))), length=10)
 
     write_problem_to_file(problem_name, g, ζ_vec, I_vec, f_vec)
 
@@ -83,5 +83,5 @@ end
 #
 # Y, f = EllZeroTrendFiltering.find_optimal_y_values(ℓ, V_N, I)
 #
-# y = interpolate((I,), Y, Gridded(Linear()))[1:length(g)]
+# y = interpolate((I,), Y, Gridded(Linear()))(1:length(g))
 # cost2 = sum((y[1:end]-g[1:end]).^2) # Note: cost at i=N should not be included

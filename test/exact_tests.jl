@@ -1,16 +1,15 @@
-using Base.Test, EllZeroTrendFiltering
+using Test, EllZeroTrendFiltering
 
 zero_deviation(x) = 0
 abstract type FunctionDeviation end
 
-type ZeroDeviation <: FunctionDeviation end
+struct ZeroDeviation <: FunctionDeviation end
 (f::ZeroDeviation)(x) = 0
 deviationcost(f::ZeroDeviation) = 0
 
-""" Zig-zag function: ___/\    /\___
-                           \/\/
-"""
-type TriangleDeviation <: FunctionDeviation
+# Zig-zag function
+#
+struct TriangleDeviation <: FunctionDeviation
     y1::Float64
     y2::Float64
     x1::Float64
@@ -34,7 +33,8 @@ deviationcost(f::TriangleDeviation) = 8/3*(0.05^3*2^2*(f.y2 - f.y1)^2*(f.x2 - f.
 
 
 function evaluatefunction(Xsol,Ysol,deviations,x)
-    i2 = max(findfirst(v -> v >= x, Xsol),2)
+    firsti = findfirst(v -> v >= x, Xsol)
+    i2 = (firsti == nothing) ? 2 : firsti
     i1 = i2-1
     linearval = Ysol[i1] + (x-Xsol[i1])*((Ysol[i2]-Ysol[i1])/(Xsol[i2]-Xsol[i1]))
     return  linearval + deviations[i1](x)
@@ -52,12 +52,12 @@ function testfunction(Xsol, Ysol, intermediate)
     t = [0.]
     # Add intermediate number of points on x grid, exactly hitting Xsol
     for i = 2:(segments+1)
-        append!(t, linspace(Xsol[i-1], Xsol[i],intermediate+2)[2:end])
+        append!(t, range(Xsol[i-1], stop= Xsol[i], length=intermediate+2)[2:end])
     end
     return f, t, extra_cost
 end
 
-srand(12345)
+Random.seed!(12345)
 
 function random_problem(segments)
     Msol = segments - 1
@@ -73,6 +73,7 @@ end
 
 segments = 5
 @testset "Exact solution segments = $segments, i=$i" for i = 1:10
+    local t  # TODO, can remove in julia 1.0?
     Ysol, Xsol, f, t, extra_cost, intermediate = random_problem(segments)
 
     I, Y, v = fit_pwl_constrained(f, t, segments, 1e-12, lazy=true)
@@ -84,6 +85,7 @@ end
 
 segments = 20
 @testset "Exact solution segments = $segments, i=$i" for i = 1:10
+    local t  # TODO, can remove in julia 1.0?
     Ysol, Xsol, f, t, extra_cost = random_problem(segments)
 
     I, Y, v = fit_pwl_constrained(f, t, segments, 1e-12, lazy=true)

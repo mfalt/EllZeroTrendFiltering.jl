@@ -3,23 +3,24 @@
 # Sparse L2 Optimal Fitting subject Continuity Constraints
 # Integrated Square
 
-using Base.Test
+using Test
 
-@everywhere include(joinpath(Pkg.dir("EllZeroTrendFiltering"),"src","jl"))
+# TODO what is this?
+#@everywhere include(joinpath(dirname(@__FILE__),"..","src","jl"))
 
 
 @everywhere using Polynomials, IterTools#, Plots
 
 testN = 9
 @everywhere t1 = time()
-#maxlengths = Array{Int64,1}(testN) ;        maxlengths[1] = 1
-#times = Array{Float64,1}(testN);            times[1] = 0.
-#sizes = Array{Array{Int64,2},1}(testN);     sizes[1] = reshape([1],(1,1))
+#maxlengths = Array{Int64,1}(undef, testN) ;        maxlengths[1] = 1
+#times = Array{Float64,1}(undef, testN);            times[1] = 0.
+#sizes = Array{Array{Int64,2},1}(undef, testN);     sizes[1] = reshape([1],(1,1))
 #gr()
 j = 9
 #@everywhere function testi(j)
     N = j
-    t = linspace(0,2π,N)
+    t = range(0, stop=2π, length=50)
     #g = Poly([0,0,1,-1])
     ran = 0.1*randn(N)
     z(t) = ran[floor(Int64, t/2pi*(N-1))+1]
@@ -92,7 +93,7 @@ for k = 7:7
     end
 
 
-    #x = linspace(0,1,100)
+    #x = range(0, stop=1, length=100)
 
     #closefig()
     plot!(t[I2],Y2, m=:circle, lab="k=$k")
