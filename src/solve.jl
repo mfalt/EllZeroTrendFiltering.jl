@@ -199,7 +199,7 @@ i.e. μ(x₁) = min_x₂{ qf(x₁,x₂) +  p(x₂) }`
 
 The input `μ` can be pre-allocated on input and will then be changed.
 """
-@inline function minimize_wrt_x2(qf::QuadraticForm{T}, p::QuadraticPolynomial{T}, μ=QuadraticPolynomial{T}()) where T
+@inline function minimize_wrt_x2_old(qf::QuadraticForm{T}, p::QuadraticPolynomial{T}, μ=QuadraticPolynomial()) where T
     P = qf.P
     q = qf.q
     r = qf.r
@@ -221,34 +221,82 @@ The input `μ` can be pre-allocated on input and will then be changed.
 end
 
 
+@inline function minimize_wrt_x2_alt(qf::QuadraticForm{T}, χ::SVector{2,T}, p::QuadraticPolynomial{T}, μ=QuadraticPolynomial{T}()) where T
+    P = qf.P + p.a*χ*χ'
+    q = qf.q + p.b*χ
+    r = qf.r + p.c
+
+    if P[2,2] > 0
+        μ.a = P[1,1] - P[1,2]^2 / P[2,2]
+        μ.b = q[1] - P[1,2]*q[2] / P[2,2]
+        μ.c = r - q[2]^2 / P[2,2] / 4
+    elseif P[2,2] == 0
+        μ.a = P[1,1]
+        μ.b = q[1]
+        μ.c = r
+    else
+        error("Piecewise quadratic cost should be positive (semi-)definite. Please submit a bug report.")
+    end
+    return μ
+end
+
+
+@inline function minimize_wrt_x2(qf::QuadraticForm{T}, μ=QuadraticPolynomial{T}()) where T
+    P = qf.P
+    q = qf.q
+    r = qf.r
+
+    if P[2,2] > 0
+        μ.a = P[1,1] - P[1,2]^2 / P[2,2]
+        μ.b = q[1] - P[1,2]*q[2] / P[2,2]
+        μ.c = r - q[2]^2 / P[2,2] / 4
+    elseif P[2,2] == 0
+        μ.a = P[1,1]
+        μ.b = q[1]
+        μ.c = r
+    else
+        error("Piecewise quadratic cost should be positive (semi-)definite. Please submit a bug report.")
+    end
+    return μ
+end
+
+
+
 
 
 global counter1
 global counter2
 
 """
-    Λ = pwq_dp_constrained(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf) where {T}
+    Λ = pwq_dp_constrained(l::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf) where {T}
 
-Given the transition costs `ℓ[i,j](y_i,y_j)` and the cost at the endpoint `V_N(y_N)` find all solutions `f` with up to `M` segments for the problem
+Given the transition costs `l[i,j](y_i,y_j)` and the cost at the endpoint `V_N(y_N)` find all solutions `f` with up to `M` segments for the problem
 
-V_i^m = minimize_f^M [ Σ_{k=1}^i { ℓ[k,k+1](f(k),f(k+1)) } + V_N(f(N)) ]
+V_i^m = minimize_f^M [ Σ_{k=1}^i { l[k,k+1](f(k),f(k+1)) } + V_N(f(N)) ]
 s.t          f(k) being continuous piecewise linear with `m` segements.
 
-i.e. `Λ[m,i]` contains the best (in `ℓ` cost) continuous piecewise linear function `f` with up to `M` segments over the interval `i` to `N`
+i.e. `Λ[m,i]` contains the best (in `l` cost) continuous piecewise linear function `f` with up to `M` segments over the interval `i` to `N`
 """
-function pwq_dp_constrained(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf) where T
+function pwq_dp_constrained(l::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, M::Integer, upper_bound=Inf, χ_vec=Vector{SMatrix{1,2,T,2}}(undef,0)) where T
     #global counter1
     #global counter2
     #counter1 = 0
     #counter2 = 0
 
-    N = size(ℓ, 2)
+    N = size(l, 2)
     @assert M <= N-1 "Cannot have more segments than N-1."
+
+    if isempty(χ_vec)
+        χ_vec = fill(SMatrix{1,2,T,2}([0.0, 1.0]), N-1)
+    end
+    χ0 = @SVector [0.0, 1.0]
 
     Λ = Array{PiecewiseQuadratic{T}}(undef, M, N)
 
+
+
     for i=1:N-1
-        p = minimize_wrt_x2(ℓ[i, N], V_N)
+        p = minimize_wrt_x2(l[i,N] + (V_N ∘ χ_vec[N-i]))  # FIXME: χ vector or 1x2 matrix?
         p.time_index = N
         Λ[1, i] = create_new_pwq(p)
     end
@@ -271,18 +319,17 @@ function pwq_dp_constrained(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolyno
 
                 for λ in Λ[m-1, ip]
 
-
-                    minimize_wrt_x2(ℓ[i,ip], λ.p, μ)
+                    minimize_wrt_x2(l[i,ip] + (λ.p ∘ χ_vec[ip-i]), μ)
 
                     DEBUG && println("Obtained μ = $μ")
 
-                    if OPTIMIZE
-                        μmin = unsafe_minimum(μ)
-                        if (μmin > upper_bound || μmin > upper_bound_inner)
-                            DEBUG && println("Breaking due to that $μmin > max($upper_bound, $upper_bound_inner)")
-                            continue
-                        end
-                    end
+                    # if OPTIMIZE
+                    #     μmin = unsafe_minimum(μ)
+                    #     if (μmin > upper_bound || μmin > upper_bound_inner)
+                    #         DEBUG && println("Breaking due to that $μmin > max($upper_bound, $upper_bound_inner)")
+                    #         continue
+                    #     end
+                    # end
 
                     DEBUG && println("Inserting...")
 
@@ -316,18 +363,23 @@ TODO Update docstring:
 
 Finds the set I=(i_1, ..., i_M) that is the solution to the regularization problem
 
-minimize ∑ ℓ_(i, i+1)(y, y+1)  +  V_N(y_M)  +  ζ⋅card(I)
+minimize ∑ l_(i, i+1)(y, y+1)  +  V_N(y_M)  +  ζ⋅card(I)
 
-where ℓ are positive-definite quadratic forms.
+where l are positive-definite quadratic forms.
 """
-function pwq_dp_regularized(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, ζ::T) where T
-    N = size(ℓ, 2)
+function pwq_dp_regularized(l::AbstractTransitionCost{T}, V_N::QuadraticPolynomial{T}, ζ::T, χ_vec=Vector{SMatrix{1,2,T,2}}(undef,0)) where T
+    N = size(l, 2)
 
     Λ = Vector{PiecewiseQuadratic{T}}(undef, N)
 
     V_N = deepcopy(V_N)
     V_N.time_index = -1
     Λ[N] = create_new_pwq(V_N)
+
+    if isempty(χ_vec)
+        χ_vec = fill(SMatrix{1,2,T,2}([0.0, 1.0]), N-1)
+    end
+    χ0 = @SVector [0.0, 1.0]
 
     μ = QuadraticPolynomial{T}()
 
@@ -340,7 +392,8 @@ function pwq_dp_regularized(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolyno
             for λ in Λ[ip]
                 #counter1 += 1
 
-                minimize_wrt_x2(ℓ[i,ip], λ.p, μ)
+                minimize_wrt_x2(l[i,ip] + (λ.p ∘ χ_vec[ip-i]), μ)
+                #minimize_wrt_x2(l[i,ip], λ.p, μ)
                 μ.c += ζ # add cost for break point
 
 
@@ -397,11 +450,11 @@ function recover_optimal_index_set(Λ::PiecewiseQuadratic{T}, first_index=1) whe
 end
 
 """
-    Y, f = find_optimal_y_values(ℓ, V_N, I)
-Given transition costs `ℓ`, cost of right endpoint `V_N`, and breakpoint indicies `I`
+    Y, f = find_optimal_y_values(l, V_N, I)
+Given transition costs `l`, cost of right endpoint `V_N`, and breakpoint indicies `I`
 the optimal y-values `Y` and the optimal cost `f` are computed.
 """
-function find_optimal_y_values(ℓ, V_N::QuadraticPolynomial, I)
+function find_optimal_y_values(l, V_N::QuadraticPolynomial, I)
     m = length(I) - 1
 
     P = zeros(m+1, m+1)
@@ -415,9 +468,9 @@ function find_optimal_y_values(ℓ, V_N::QuadraticPolynomial, I)
     # Form quadratic cost function Y'*P*Y + q'*Y + r
     # corresponding to the y-values in the vector Y
     for j=1:m
-        P[j:j+1,j:j+1] .+= ℓ[I[j], I[j+1]].P
-        q[j:j+1] .+= ℓ[I[j], I[j+1]].q
-        r += ℓ[I[j], I[j+1]].r
+        P[j:j+1,j:j+1] .+= l[I[j], I[j+1]].P
+        q[j:j+1] .+= l[I[j], I[j+1]].q
+        r += l[I[j], I[j+1]].r
     end
 
     # find the optimal Y-vector, and compute the correspinding error
@@ -429,12 +482,12 @@ end
 
 # TODO: Include mζ in the cost?!
 """
-    I, Y, f = recover_solution(Λ::PiecewiseQuadratic{T}, ℓ, V_N::QuadraticPolynomial, first_index=1)
+    I, Y, f = recover_solution(Λ::PiecewiseQuadratic{T}, l, V_N::QuadraticPolynomial, first_index=1)
 
 """
-function recover_solution(Λ::PiecewiseQuadratic, ℓ, V_N::QuadraticPolynomial, ζ=0.0)
+function recover_solution(Λ::PiecewiseQuadratic, l, V_N::QuadraticPolynomial, ζ=0.0)
     I, _, f_expected = recover_optimal_index_set(Λ, 1)
-    Y, f = find_optimal_y_values(ℓ, V_N::QuadraticPolynomial, I)
+    Y, f = find_optimal_y_values(l, V_N::QuadraticPolynomial, I)
 
     f_regularized = f + ζ*(length(I)-1) # Include regularization cost
 
@@ -554,29 +607,29 @@ end
 
 # Continuous case
 """ `get_transition_costs(g, t, lazy; tol=1e-3)`
-    Return `(ℓ, cost_last)`: the transition cost and end-cost.
+    Return `(l, V_N)`: the transition cost and end-cost.
     Slightly unsafe since `tol` is ignored (not needed) on discrete problems
 """
 function get_transition_costs(g, t, lazy; tol=1e-3)
     T = Float64
-    ℓ = lazy ? TransitionCostContinuous{T}(g, t, tol) :
+    l = lazy ? TransitionCostContinuous{T}(g, t, tol) :
                compute_transition_costs(g, t, tol)
     # Continouous case, no cost at endpoint
-    cost_last = zero(QuadraticPolynomial{Float64})
-    return ℓ, cost_last
+    V_N = zero(QuadraticPolynomial{Float64})
+    return l, V_N
 end
 
 # Discrete case, tol is not used here, but in signature to enable dispatch
 function get_transition_costs(g::AbstractArray, t, lazy; tol=1e-3)
     T = promote_type(eltype(g), Float64)
-    ℓ = lazy ? TransitionCostDiscrete{T}(g, t) :
+    l = lazy ? TransitionCostDiscrete{T}(g, t) :
                compute_discrete_transition_costs(g, t)
     if t[1] != 1 || t[end] != length(g)
         @warn "In fit_pwl_constrained: The supplied grid t only covers the range ($(t[1]),$(t[end])) while the range of indices for g is (1,$(length(g))). No costs will be considered outside the range of t."
     end
     # Discrete case, so cost at endpoint is quadratic
-    cost_last = QuadraticPolynomial(1.0, -2*g[t[end]], g[t[end]]^2)
-    return ℓ, cost_last
+    V_N = QuadraticPolynomial(1.0, -2*g[t[end]], g[t[end]]^2)
+    return l, V_N
 end
 
 
@@ -596,24 +649,24 @@ such that the optimal function has breakpoints in `I` (or `t[I]`) and satisfies
 Kwargs:
 `t` is optional parameter in the discrete case, restricting the set of possible gridpoints,
 i.e. so that `f[t[I]] .== Y`.
-`lazy` = true, means that the internal transition costs `ℓ[i,j]` will be calculated when needed.
+`lazy` = true, means that the internal transition costs `l[i,j]` will be calculated when needed.
 `tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
 """
 function  fit_pwl_regularized(g::AbstractArray, ζ; t=1:length(g), lazy=true)
-    ℓ, cost_last = get_transition_costs(g, t, lazy)
-    fit_pwl_regularized_internal(ℓ, cost_last, ζ)
+    l, V_N = get_transition_costs(g, t, lazy)
+    fit_pwl_regularized_internal(l, V_N, ζ)
 end
 
 # Continuous function
 function  fit_pwl_regularized(g, t, ζ, tol=1e-3; lazy=true)
-    ℓ, cost_last = get_transition_costs(g, t, lazy, tol=tol)
-    fit_pwl_regularized_internal(ℓ, cost_last, ζ)
+    l, V_N = get_transition_costs(g, t, lazy, tol=tol)
+    fit_pwl_regularized_internal(l, V_N, ζ)
 end
 
-function  fit_pwl_regularized_internal(ℓ, cost_last, ζ)
-    Λ_reg = pwq_dp_regularized(ℓ, cost_last, ζ)
+function  fit_pwl_regularized_internal(l, V_N, ζ)
+    Λ_reg = pwq_dp_regularized(l, V_N, ζ)
     #Get solution that starts at first index
-    I, Y, f = recover_solution(Λ_reg[1], ℓ, cost_last, ζ)
+    I, Y, f = recover_solution(Λ_reg[1], l, V_N, ζ)
     return I, Y, f
 end
 
@@ -634,29 +687,29 @@ such that the optimal function has breakpoints in `I` (or `t[I]`) and satisfies
 Kwargs:
 `t` is optional parameter in the discrete case, restricting the set of possible gridpoints,
 i.e. so that `f[t[I]] .== Y`.
-`lazy` = true, means that the internal transition costs `ℓ[i,j]` will be calculated when needed.
+`lazy` = true, means that the internal transition costs `l[i,j]` will be calculated when needed.
 `tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
 """
 function  fit_pwl_constrained(g::AbstractArray, M; t=1:length(g), lazy=false)
-    ℓ, cost_last = get_transition_costs(g, t, lazy)
-    fit_pwl_constrained_internal(ℓ, cost_last, M)
+    l, V_N = get_transition_costs(g, t, lazy)
+    fit_pwl_constrained_internal(l, V_N, M)
 end
 
 # Continuous function
 function  fit_pwl_constrained(g, t, M, tol=1e-3; lazy=false)
-    ℓ, cost_last = get_transition_costs(g, t, lazy, tol=tol)
-    fit_pwl_constrained_internal(ℓ, cost_last, M)
+    l, V_N = get_transition_costs(g, t, lazy, tol=tol)
+    fit_pwl_constrained_internal(l, V_N, M)
 end
 
-function  fit_pwl_constrained_internal(ℓ::AbstractTransitionCost{T}, cost_last, M) where T
-    Λ = pwq_dp_constrained(ℓ, cost_last, M);
+function  fit_pwl_constrained_internal(l::AbstractTransitionCost{T}, V_N, M) where T
+    Λ = pwq_dp_constrained(l, V_N, M);
 
     Ivec = Vector{Vector{Int}}(undef, M)
     Yvec = Vector{Vector{T}}(undef, M)
     fvec = Vector{T}(undef, M)
 
     for m=1:M
-        Ivec[m], Yvec[m], fvec[m] = recover_solution(Λ[m, 1], ℓ, cost_last)
+        Ivec[m], Yvec[m], fvec[m] = recover_solution(Λ[m, 1], l, V_N)
     end
 
     return Ivec, Yvec, fvec

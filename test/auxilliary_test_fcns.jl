@@ -14,14 +14,14 @@ function brute_force_multi(g, M, t=1:length(g); tol=1e-3)
         M = length(g)-1
     end
 
-    ℓ, V_N = EllZeroTrendFiltering.get_transition_costs(g, t, true, tol=tol)
+    l, V_N = EllZeroTrendFiltering.get_transition_costs(g, t, true, tol=tol)
 
     I_vec = Vector{Vector{Int64}}(undef, M)
     Y_vec = Vector{Vector{Float64}}(undef, M)
     f_vec = Vector{Float64}(undef, M)
 
     for m=1:M
-        (I_bf, Y_bf, f_bf) = brute_force_search(ℓ, V_N, m)
+        (I_bf, Y_bf, f_bf) = brute_force_search(l, V_N, m)
         I_vec[m] = t[I_bf]
         Y_vec[m] = Y_bf
         f_vec[m] = f_bf

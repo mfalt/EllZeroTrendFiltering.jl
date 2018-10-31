@@ -11,17 +11,17 @@ g = snp500_data()[1:2000]
 N = length(g)
 
 # Transition costs (for recvoering the y-values)
-ℓ = compute_discrete_transition_costs(g)
+l = compute_discrete_transition_costs(g)
 V_N = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
 
 M = 50
 
 #f = open("data.jld", "w+"); serialize(f, Λ); close(f)
-#@time Λ =  pwq_dp_constrained(ℓ, V_N, M)
+#@time Λ =  pwq_dp_constrained(l, V_N, M)
 
 sols_opt = []
 for m=1:M
-    I_opt, Y_opt, f_opt = recover_solution(Λ[m, 1], ℓ, V_N)
+    I_opt, Y_opt, f_opt = recover_solution(Λ[m, 1], l, V_N)
     push!(sols_opt, (I_opt, Y_opt, f_opt))
 end
 
@@ -86,7 +86,7 @@ for (i, max_cost)=enumerate(max_cost_vec)
         print(I)
 
         # Find optimal y values and optimal cost
-        Y, f = EllZeroTrendFiltering.find_optimal_y_values(ℓ, V_N, I)
+        Y, f = EllZeroTrendFiltering.find_optimal_y_values(l, V_N, I)
 
     end
     push!(sols_l1_mat, (I, Y, f))

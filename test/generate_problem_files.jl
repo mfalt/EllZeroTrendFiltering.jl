@@ -78,10 +78,10 @@ end
 ## provide some cheap options to compute costs
 # using Interpolations
 #
-# ℓ = compute_discrete_transition_costs(g)
+# l = compute_discrete_transition_costs(g)
 # V_N = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
 #
-# Y, f = EllZeroTrendFiltering.find_optimal_y_values(ℓ, V_N, I)
+# Y, f = EllZeroTrendFiltering.find_optimal_y_values(l, V_N, I)
 #
 # y = interpolate((I,), Y, Gridded(Linear()))(1:length(g))
 # cost2 = sum((y[1:end]-g[1:end]).^2) # Note: cost at i=N should not be included

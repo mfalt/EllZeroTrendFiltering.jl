@@ -7,7 +7,7 @@ using Base.Test
 @everywhere using Polynomials, IterTools, Plots
 
 
-function plotall(Λ,ℓ,t,g, both=true)
+function plotall(Λ,l,t,g, both=true)
     M = size(Λ,1)
     N = length(t)
     γ = both ? 2 : 1
@@ -27,7 +27,7 @@ function plotall(Λ,ℓ,t,g, both=true)
                 fstr = @sprintf("%3.2f", fI)
                 plot!(p, y, x, l=:red, subplot=k, lab="$I, $ystr, $fstr", ylims=(-4,4), xlims=(0,6))
                 if both && length(I) > 1 && fI != NaN
-                    Y, _ = find_optimal_y_values(ℓ, I)
+                    Y, _ = find_optimal_y_values(l, I)
                     tcont = range(t[1], stop=t[end], length=100*length(t)))
                     plot!(p, tcont/t[end]*(N-1)+1, g.(tcont), l=:blue, lab="", subplot=k+N-1)
                     plot!(p, I, Y, m=:circle, l=:red, lab="", subplot=k+N-1)
@@ -48,18 +48,18 @@ ran = cumsum(0.1*randn(10*N))
 t = range(0, stop=1, length=N)
 
 g6(t) = ran[floor(Int64, t*10(N-1)+1)]
-ℓ = compute_transition_costs(g6, t);
+l = compute_transition_costs(g6, t);
 
-Λ_0 = [create_new_pwq(minimize_wrt_x2(ℓ[i, N], QuadraticPolynomial{Float64}(0.,0.,0.))) for i in 1:N-1];
-Λ, t2, _, _, _ = @timed pwq_dp_constrained(Λ_0, ℓ, 19);
+Λ_0 = [create_new_pwq(minimize_wrt_x2(l[i, N], QuadraticPolynomial{Float64}(0.,0.,0.))) for i in 1:N-1];
+Λ, t2, _, _, _ = @timed pwq_dp_constrained(Λ_0, l, 19);
 ##
 #[(isassigned(Λ,i) ? length(Λ[i]) : 0) for i in eachindex(Λ)]
 lengths = reshape([(isassigned(Λ,i) ? length(Λ[i]) : 0) for i in eachindex(Λ)], size(Λ))
 plotly()
 heatmap(lengths, show=true)
-# p = plotall(Λ,ℓ,t,g, true);
+# p = plotall(Λ,l,t,g, true);
 # @time I2, y2, f2 = recover_solution(Λ[19, 1], 1, N)
-# Y2, _ = find_optimal_y_values(ℓ, I2)
+# Y2, _ = find_optimal_y_values(l, I2)
 # plot(range(1, stop=N, length=N), g5.(range(1, stop=N, length=N)))
 # plot!(I2, Y2)
 # plot!(p, show=true)

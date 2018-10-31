@@ -40,9 +40,11 @@ Base.zero(S::T) where {T<:QuadraticPolynomial} = zero(T)
 
 ==(p1::QuadraticPolynomial, p2::QuadraticPolynomial) = (p1.a==p2.a) && (p1.b==p2.b) && (p1.c==p2.c)
 
-@inline function (p::QuadraticPolynomial)(x)
+@inline function (p::QuadraticPolynomial)(x::Number)
     return p.a*x^2 + p.b*x + p.c
 end
+
+
 
 
 # Finds the minimum of a positive definite quadratic one variable polynomial

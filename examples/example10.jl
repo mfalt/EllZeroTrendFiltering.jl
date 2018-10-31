@@ -6,17 +6,17 @@ I_g = rand(N)
 I_g2 = rand(N)
 I_tg = rand(N)
 
-ℓ = EllZeroTrendFiltering.TransitionCostContinuous{Float64}(t, I_g, I_g2, I_tg)
+l = EllZeroTrendFiltering.TransitionCostContinuous{Float64}(t, I_g, I_g2, I_tg)
 
-#ℓ = compute_transition_costs(x -> exp(2^x), range(0, stop=2, length=N))
+#l = compute_transition_costs(x -> exp(2^x), range(0, stop=2, length=N))
 
-ℓ = compute_transition_costs(x -> exp(x^2), range(0, stop=1, length=20))
+l = compute_transition_costs(x -> exp(x^2), range(0, stop=1, length=20))
 
 V_N = QuadraticPolynomial(0.0, 0.0, 0.0)
 
 M = 10
 
-@time Λ =  pwq_dp_constrained(ℓ, V_N, M)
+@time Λ =  pwq_dp_constrained(l, V_N, M)
 
 
 unique_polys(Λ) = length(unique([λ.p for λ in Λ]))

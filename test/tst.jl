@@ -20,23 +20,23 @@ z(t) = ran[floor(Int64, t/4pi*(N-1))+1]
 g = sin
 g2(t) = g(t) + z(t)
 
-@time ℓ = compute_transition_costs(g, t);
+@time l = compute_transition_costs(g, t);
 
 
 K = 7
-#@time I, Y, f = brute_force_search(ℓ, K-1);
+#@time I, Y, f = brute_force_search(l, K-1);
 
 
-Λ_0 = [create_new_pwq(minimize_wrt_x2(ℓ[i, N])) for i in 1:N-1];
+Λ_0 = [create_new_pwq(minimize_wrt_x2(l[i, N])) for i in 1:N-1];
 
-@time Λ = pwq_dp_constrained(Λ_0, ℓ, 7);
+@time Λ = pwq_dp_constrained(Λ_0, l, 7);
 tot
 
 using Plots
 plot(t, g.(t), lab="g(t)")
 for k = 7:7
     @time I2, y2, f2 = recover_solution(Λ[k, 1], 1, N)
-    Y2, _ = find_optimal_y_values(ℓ, I2)
+    Y2, _ = find_optimal_y_values(l, I2)
 
     println("Comparison: ", sqrt(f), " --- ", sqrt(f2))
 

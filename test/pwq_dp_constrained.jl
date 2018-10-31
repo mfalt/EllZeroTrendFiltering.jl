@@ -3,10 +3,10 @@ using Test, EllZeroTrendFiltering
 t = range(0, stop=4π, length=50)
 g = sin
 
-@time ℓ = compute_transition_costs(g, t);
-cost_last = QuadraticPolynomial(0.0, 0.0, 0.0)
+@time l = compute_transition_costs(g, t);
+V_N = QuadraticPolynomial(0.0, 0.0, 0.0)
 
-@time Λ =  pwq_dp_constrained(ℓ, cost_last, 7);
+@time Λ =  pwq_dp_constrained(l, V_N, 7);
 
 I_sols = [      [[1, 50]],
                 [[1, 34, 50], [1, 17, 50]],
@@ -19,7 +19,7 @@ f_costs = [5.328255648628215, 4.8783936257642315, 1.7402065022125042, 0.91968804
 
 
 @testset "Optimal Fit m=$m" for m = 1:5
-    I, _, f = recover_solution(Λ[m, 1], ℓ, cost_last)
+    I, _, f = recover_solution(Λ[m, 1], l, V_N)
 
     @test I ∈ I_sols[m]
     @test f ≈ f_costs[m]    atol = 1e-8
@@ -27,7 +27,7 @@ end
 
 ##
 @testset "Brute force m=$m" for m = 1:4
-    I_bf, _, f_bf = brute_force_search(ℓ, cost_last, m);
+    I_bf, _, f_bf = brute_force_search(l, V_N, m);
 
     @test I_bf ∈  I_sols[m]
     @test f_bf ≈ f_costs[m]    atol = 1e-8
@@ -38,7 +38,7 @@ end
 
 @testset "Regularize ζ=$ζ" for ζ in 0.1:0.1:2
 
-    Λ_reg = pwq_dp_regularized(ℓ, cost_last, ζ)
+    Λ_reg = pwq_dp_regularized(l, V_N, ζ)
 
     # recover_optimal_index_set returns the cost inclusive the regularization penality,
     # revober optimal solution does not do so. It is arguably more interesting
