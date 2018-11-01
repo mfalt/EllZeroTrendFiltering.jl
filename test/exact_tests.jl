@@ -76,7 +76,7 @@ segments = 5
     local t  # TODO, can remove in julia 1.0?
     Ysol, Xsol, f, t, extra_cost, intermediate = random_problem(segments)
 
-    I, Y, v = fit_pwl_constrained(f, t, segments, 1e-12, lazy=true)
+    I, Y, v = fit_pwl_constrained(f, t, segments; tol=1e-12, precompute=false)
     # Test that we find exactly expected solution, should almost always be true for small mbr of segments
     @test all(I[segments] .== 1:(intermediate+1):(segments*(intermediate+1)+1))
     @test norm(Ysol.-Y[end]) < 1e-13
@@ -88,7 +88,7 @@ segments = 20
     local t  # TODO, can remove in julia 1.0?
     Ysol, Xsol, f, t, extra_cost = random_problem(segments)
 
-    I, Y, v = fit_pwl_constrained(f, t, segments, 1e-12, lazy=true)
+    I, Y, v = fit_pwl_constrained(f, t, segments; tol=1e-12, precompute=false)
     # Test that we find same or better solution
     @test extra_cost > v[end] - 1e-12
 end

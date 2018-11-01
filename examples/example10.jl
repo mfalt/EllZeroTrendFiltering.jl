@@ -16,7 +16,7 @@ V_N = QuadraticPolynomial(0.0, 0.0, 0.0)
 
 M = 10
 
-@time Λ =  pwq_dp_constrained(l, V_N, M)
+@time Λ =  construct_value_fcn_constrained(l, V_N, M)
 
 
 unique_polys(Λ) = length(unique([λ.p for λ in Λ]))

@@ -86,3 +86,19 @@ function brute_force_search(A::Matrix{T}, b::Vector{T}, m::Integer, c::Integer=0
     end
     return I_best, u_best, cost_best
 end
+
+
+
+# Either initial conditions are free or they are zero
+function generate_markov_matrix(sys::ControlSystems.StateSpace, N; free_intial_conditions=false)
+    y, _ = ControlSystems.impulse(sys, N-1)
+    T = matrixdepot("toeplitz", y[1:N],  zeros(N))
+
+    if free_intial_conditions
+        sys_initial = ControlSystems.ss(sys.A, sys.B, Matrix(I, 2, 2), 0, 1)
+        y_initial, _ = ControlSystems.impulse(sys_initial, N)
+        return [y_initial[2:end, :] T]
+    else
+        return T
+    end
+end

@@ -6,8 +6,8 @@ N = 400
 data = snp500_data()[1:N]
 
 M = 10
-@testset "Examples lazy=$lazy" for lazy in [true, false]
-    Ivec, Yvec, fvec = fit_pwl_constrained(data, M, lazy=lazy)
+@testset "Examples precompute=$precompute" for precompute in [true, false]
+    Ivec, Yvec, fvec = fit_pwl_constrained(data, M, precompute=precompute)
 
     #Make sure nothing crashes
     @test Ivec[5] == [1,78,146,162,370,400]
@@ -23,7 +23,7 @@ M = 10
 
     #Test regularize discrete
     # should generate solution with 10 segments
-    I, Y, f = fit_pwl_regularized(data, 0.02, lazy=lazy)
+    I, Y, f = fit_pwl_regularized(data, 0.02; precompute=precompute)
     @test length(I) == 9
     @test I == Ivec[8]
     @test Y ≈ Yvec[8]     rtol=sqrt(eps())
@@ -36,19 +36,19 @@ M = 10
 
 
     ζ = 0.1
-    I, Y, cost = fit_pwl_regularized(g_, t, ζ, lazy=lazy)
+    I, Y, cost = fit_pwl_regularized(g_, t, ζ; precompute=precompute)
 
     @test I == [1, 87, 107, 129, 147, 201]
     @test cost ≈ 0.35055983342102515
 
     # Compare to constrained
-    Ivec, Yvec, fvec = fit_pwl_constrained(g_, t, 5, lazy=lazy)
+    Ivec, Yvec, fvec = fit_pwl_constrained(g_, t, 5; precompute=precompute)
     @test I == Ivec[5]
     @test Y ≈ Yvec[5]       rtol=sqrt(eps())
     @test cost ≈ fvec[5]       rtol=sqrt(eps())
 
     ζ = 0.002
-    I, Y, cost = fit_pwl_regularized(g_, t, ζ, lazy=lazy)
+    I, Y, cost = fit_pwl_regularized(g_, t, ζ, precompute=precompute)
 
     @test I == [1, 9, 15, 33, 52, 68, 87, 104, 111, 125, 132, 146, 153, 170, 188, 201]
     @test cost ≈ 0.006061712727833957

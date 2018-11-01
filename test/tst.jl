@@ -29,7 +29,7 @@ K = 7
 
 Λ_0 = [create_new_pwq(minimize_wrt_x2(l[i, N])) for i in 1:N-1];
 
-@time Λ = pwq_dp_constrained(Λ_0, l, 7);
+@time Λ = construct_value_fcn_constrained(Λ_0, l, 7);
 tot
 
 using Plots

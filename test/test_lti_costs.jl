@@ -5,7 +5,7 @@ C = SMatrix{1,2,Float64,2}([1 0])
 
 # Constant g with all ones
 g = ones(5)
-l, χ_vec = compute_second_order_system2(g, A, C)
+l, χ_vec = compute_problem_data_lti(g, A, C)
 
 χ_vec[1] == [1 1]
 χ_vec[2] == [1 2]
@@ -23,7 +23,7 @@ l[3,5]([1,1]) == 0^2 + 1^2
 
 # Straight line
 g = Vector{Float64}(0:4)
-l, _ = compute_second_order_system2(g, A, C)
+l, _ = compute_problem_data_lti(g, A, C)
 
 # For double integrator system..
 l[1,5]([0,0]) == 0^2 + 1^2 + 2^2 + 3^2
@@ -40,7 +40,7 @@ B = SMatrix{2,1,Float64,2}([0; 0.2][:,:])
 
 # g is all zeros
 g = zeros(10)
-l, χ_vec = compute_second_order_system2(g, A, C)
+l, χ_vec = compute_problem_data_lti(g, A, C)
 V_N = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
 
 χ_vec[1] == [0.9 0.1]
@@ -74,7 +74,7 @@ l[1,2](x[:,1]) + l[2,6](x[:,2]) + l[6,10](x[:,6]) + V_N(x[1,10]) ==
 
 # g is more general
 g = [1.0, 0.0, 1.0, 2.0, 1.5, 1.5, 1.0, 1.0, 0.5, 0.0]
-l, _ = compute_second_order_system2(g, A, C)
+l, _ = compute_problem_data_lti(g, A, C)
 V_N = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
 
 x0 = [0.0, 1]

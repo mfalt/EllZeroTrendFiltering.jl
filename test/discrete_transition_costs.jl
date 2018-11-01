@@ -1,6 +1,8 @@
 using Test, EllZeroTrendFiltering
 using Interpolations
 
+import EllZeroTrendFiltering: TransitionCostDiscrete
+
 Random.seed!(31415)
 
 # Auxilliary function for evaluating the approximation error for a specific
@@ -17,7 +19,7 @@ end
 ## Test 1
 # Compare the approximation error for specific piecewise linear approximations
 # (I, Y) when the costs are computed  by
-# (1) using l computed by compute_discrete_transition_costs and
+# (1) using l computed by TransitionCostDiscrete{Float64} and
 #     then evaluated using the above auxilliary function
 # (2) simple linear interpolation
 
@@ -43,7 +45,7 @@ t_ss4 = t_ss3
 
 
 for (g, I, Y, t_subsampled) in ((g1, I1, Y1, t_ss1), (g2, I2, Y2, t_ss2), (g3, I3, Y3, t_ss3))#, (g4, I4, Y4))
-    l = compute_discrete_transition_costs(g)
+    l = TransitionCostDiscrete{Float64}(g)
     cost1 = compute_cost(l,I,Y)
 
     y = interpolate((I,), Y, Gridded(Linear()))(1:length(g))
@@ -52,7 +54,7 @@ for (g, I, Y, t_subsampled) in ((g1, I1, Y1, t_ss1), (g2, I2, Y2, t_ss2), (g3, I
     @test cost1 ≈ cost2
 
     # Test transition cost with t grid
-    ℓ_subsampled = compute_discrete_transition_costs(g, t_subsampled)
+    ℓ_subsampled = TransitionCostDiscrete{Float64}(g, t_subsampled)
 
     for i in 1:length(t_subsampled)-1
         for ip in (i+1):length(t_subsampled)
@@ -66,7 +68,7 @@ end
 
 ## Test 2
 # Check the transition costs for a very simple example
-l = compute_discrete_transition_costs([1.0, 2.0, 3.0])
+l = TransitionCostDiscrete{Float64}([1.0, 2.0, 3.0])
 
 # (y - 1)^2
 @test l[1,2].P == [1.0 0.0; 0.0 0.0]

@@ -14,7 +14,7 @@ function brute_force_multi(g, M, t=1:length(g); tol=1e-3)
         M = length(g)-1
     end
 
-    l, V_N = EllZeroTrendFiltering.get_transition_costs(g, t, true, tol=tol)
+    l, χ, V_N = compute_problem_data_pwl(g, t; precompute=true)
 
     I_vec = Vector{Vector{Int64}}(undef, M)
     Y_vec = Vector{Vector{Float64}}(undef, M)

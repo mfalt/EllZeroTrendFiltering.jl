@@ -17,7 +17,7 @@ V_N = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
 M = 50
 
 #f = open("data.jld", "w+"); serialize(f, Λ); close(f)
-#@time Λ =  pwq_dp_constrained(l, V_N, M)
+#@time Λ =  construct_value_fcn_constrained(l, V_N, M)
 
 sols_opt = []
 for m=1:M

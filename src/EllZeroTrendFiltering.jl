@@ -2,19 +2,24 @@ module EllZeroTrendFiltering
 
 export QuadraticPolynomial, PiecewiseQuadratic, QuadraticForm
 export fit_pwl_constrained, fit_pwl_regularized
-export pwq_dp_regularized, pwq_dp_constrained
+export construct_value_fcn_constrained, construct_value_fcn_regularized
 #Should we export the following?
-export compute_transition_costs, compute_discrete_transition_costs
+export compute_problem_data_pwl, compute_problem_data_lti
 export recover_optimal_index_set, recover_solution, brute_force_search
+export recover_optimal_index_set_free_ic
+export generate_markov_matrix
 export snp500_data
 
 import Base.-
 import Base.+
+import Base.∘
 import Base.show
 import Base: iterate, length, zero, getindex, ==
 
 import IterTools
 
+
+import ControlSystems
 
 
 using StaticArrays
@@ -40,7 +45,8 @@ include(joinpath("types","transition_costs.jl"))
 
 AbstractTransitionCost{T} = Union{Array{QuadraticForm{T},2}, TransitionCostDiscrete{T}, TransitionCostContinuous{T}}
 
-include("transition_cost_computation.jl")
+include("utility_fcns.jl")
+include("compute_problem_data.jl")
 include("brute_force_search.jl")
 include("solve.jl")
 

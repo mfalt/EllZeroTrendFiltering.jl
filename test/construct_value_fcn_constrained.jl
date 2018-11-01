@@ -3,10 +3,10 @@ using Test, EllZeroTrendFiltering
 t = range(0, stop=4π, length=50)
 g = sin
 
-@time l = compute_transition_costs(g, t);
+@time l, χ, V_N = compute_problem_data_pwl(g, t; tol=1e-10)
 V_N = QuadraticPolynomial(0.0, 0.0, 0.0)
 
-@time Λ =  pwq_dp_constrained(l, V_N, 7);
+@time Λ =  construct_value_fcn_constrained(l, χ, V_N, 7);
 
 I_sols = [      [[1, 50]],
                 [[1, 34, 50], [1, 17, 50]],
@@ -38,7 +38,7 @@ end
 
 @testset "Regularize ζ=$ζ" for ζ in 0.1:0.1:2
 
-    Λ_reg = pwq_dp_regularized(l, V_N, ζ)
+    Λ_reg = construct_value_fcn_regularized(l, χ, V_N, ζ)
 
     # recover_optimal_index_set returns the cost inclusive the regularization penality,
     # revober optimal solution does not do so. It is arguably more interesting

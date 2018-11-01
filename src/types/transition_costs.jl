@@ -17,9 +17,22 @@ function TransitionCostContinuous{T}(g, t::AbstractVector, tol=1e-3) where {T}
         I_g2[i] = I_g2[i-1] + quadgk(τ -> g(τ)^2, t[i-1], t[i], rtol=tol)[1]
         I_tg[i] = I_tg[i-1] + quadgk(τ -> τ*g(τ), t[i-1], t[i], rtol=tol)[1]
     end
-    TransitionCostContinuous{T}(t, I_g, I_g2, I_tg)
+    l = TransitionCostContinuous{T}(t, I_g, I_g2, I_tg)
+    #_test_positivity(l)
+    return l
 end
 
+""" Check that all transition costs are positive for all x ∈ ℝ^d.
+    This may not be the case due to numerical errors in their computation.
+    If they are negative for some x, it causes the optimization to break down.
+"""
+function _test_positivity(l::TransitionCostContinuous)
+    N = size(l, 2)
+    for i=1:N-1, ip=i+1:min(i+2,N) # It should be sufficient to test only for elements on the main diagonal, one more diagonal is considered just in case
+        #QUESTION: add epsilon on RHS?
+        minimize(l[i,ip]) < 0 && error("Transition cost is negative for some values in `compute_transition_costs`, try decreasing rtol.")
+    end
+end
 
 # getindex returns a quadratic form H([x1, x2]) that represents the
 # transition cost from i to ip
@@ -55,6 +68,10 @@ end
 
 function TransitionCostDiscrete{T}(g::AbstractArray, t::TimeType=1:length(g)) where {T, TimeType<:AbstractArray{<:Integer}}
     N = length(g)
+
+    if t[1] != 1 || t[end] != N
+        @warn "TransitionCostDiscrete: The supplied grid t only covers the range ($(t[1]),$(t[end])) while the range of indices for g is (1,$(length(g))). No costs will be considered outside the range of t."
+    end
 
     # Find sums of g, k*g, and g^2
     G1 = zeros(T, N)

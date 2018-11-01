@@ -44,9 +44,6 @@ Base.zero(S::T) where {T<:QuadraticPolynomial} = zero(T)
     return p.a*x^2 + p.b*x + p.c
 end
 
-
-
-
 # Finds the minimum of a positive definite quadratic one variable polynomial
 # the find_minimum fcn returns (opt_x, opt_val)
 function find_minimum(p::QuadraticPolynomial)

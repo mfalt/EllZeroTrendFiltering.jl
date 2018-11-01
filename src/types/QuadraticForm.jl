@@ -9,6 +9,8 @@ function QuadraticForm(P::SMatrix{2,2,T,4}, q::AbstractVecOrMat{T}, r::T) where 
     return QuadraticForm(P, SVector{2,T}(q), r)
 end
 
+minimize(qf::QuadraticForm) = -qf.q⋅(qf.P\qf.q)/4+qf.r
+
 (qf::QuadraticForm)(y::Number, yp::Number) = [y,yp]'*qf.P*[y,yp] + qf.q'*[y, yp] + qf.r
 (qf::QuadraticForm)(x::AbstractVector) = x'*qf.P*x + qf.q'*x + qf.r
 

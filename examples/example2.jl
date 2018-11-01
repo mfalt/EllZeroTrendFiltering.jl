@@ -8,12 +8,12 @@ data = data[1:300]
 
 N = length(data)
 
-@time l = compute_discrete_transition_costs(data);
+@time l, χ, V_N = EllZeroTrendFiltering.compute_problem_data_pwl(data)
 V_N = QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
 
 start_time = time()
 
-Λ = pwq_dp_constrained(l, V_N, 10, 1.65)
+Λ = construct_value_fcn_constrained(l, V_N, 10, 1.65)
 println("Time: ", time()-start_time)
 
 for k=3:10

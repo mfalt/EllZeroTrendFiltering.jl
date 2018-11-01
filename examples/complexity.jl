@@ -116,7 +116,7 @@ for prob_i=1:nbr_prob
     l = compute_discrete_transition_costs(g, t);
     V_N = QuadraticPolynomial(0.0, 0.0, 0.0)
 
-    Λ =  pwq_dp_constrained(l, V_N, 15);
+    Λ =  construct_value_fcn_constrained(l, V_N, 15);
 
     l = [(isassigned(Λ,m,i) ? length(Λ[m,i]) : 0) for m = 1:size(Λ,1), i = 1:size(Λ,2)]
 

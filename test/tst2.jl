@@ -30,7 +30,7 @@ j = 9
     K = 10
     #@time I, Y, f = brute_force_search(l, K-1);
     Λ_0 = [create_new_pwq(minimize_wrt_x2(l[i, N])) for i in 1:N-1];
-    Λ, t, _, _, _ = @timed pwq_dp_constrained(Λ_0, l, N-1);
+    Λ, t, _, _, _ = @timed construct_value_fcn_constrained(Λ_0, l, N-1);
     println("$j, tot: $(time()-t1), $t")
     times = t
     sizes = reshape([isassigned(Λ, i) ? length(Λ[i]) : 0 for i in eachindex(Λ)], size(Λ))
