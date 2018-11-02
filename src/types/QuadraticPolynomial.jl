@@ -49,14 +49,14 @@ end
 function find_minimum(p::QuadraticPolynomial)
     if p.a < 0 || (p.a == 0 && p.b != 0)
         println("No unique minimum exists")
-        return (NaN, NaN)
+        return NaN, NaN
     elseif p.a == 0
         # p.b == 0
-        return (NaN, p.c)
+        return NaN, p.c
     else
         x_opt = -p.b / 2 / p.a
         f_opt = -p.b^2/4/p.a + p.c
-        return (x_opt, f_opt)
+        return x_opt, f_opt
     end
 end
 

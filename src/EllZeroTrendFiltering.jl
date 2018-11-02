@@ -6,7 +6,7 @@ export construct_value_fcn_constrained, construct_value_fcn_regularized
 #Should we export the following?
 export compute_problem_data_pwl, compute_problem_data_lti
 export recover_optimal_index_set, recover_solution, brute_force_search
-export recover_optimal_index_set_free_ic
+export recover_optimal_index_set_zero_ic
 export generate_markov_matrix
 export snp500_data
 
@@ -17,13 +17,10 @@ import Base.show
 import Base: iterate, length, zero, getindex, ==
 
 import IterTools
-
-
 import ControlSystems
-
-
 using StaticArrays
 using QuadGK
+using MatrixDepot
 
 #StdLibrary
 using LinearAlgebra

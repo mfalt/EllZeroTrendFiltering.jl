@@ -74,7 +74,7 @@ function brute_force_search(A::Matrix{T}, b::Vector{T}, m::Integer, c::Integer=0
 
         # find the optimal u_opt vector
         u_opt = A[:, I] \ b
-        cost = norm(A[:, I]*u_opt - b)
+        cost = norm(A[:, I]*u_opt - b)^2 # Squared 2-norm is used everywhere else
 
         #println("$I_inner : $cost")
 
@@ -92,7 +92,7 @@ end
 # Either initial conditions are free or they are zero
 function generate_markov_matrix(sys::ControlSystems.StateSpace, N; free_intial_conditions=false)
     y, _ = ControlSystems.impulse(sys, N-1)
-    T = matrixdepot("toeplitz", y[1:N],  zeros(N))
+    T = MatrixDepot.matrixdepot("toeplitz", y[1:N],  zeros(N))
 
     if free_intial_conditions
         sys_initial = ControlSystems.ss(sys.A, sys.B, Matrix(I, 2, 2), 0, 1)

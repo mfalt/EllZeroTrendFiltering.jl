@@ -80,7 +80,7 @@ function compute_problem_data_lti(g::AbstractArray, A::AbstractMatrix, C::Abstra
 	    end
 	end
 
-	χ = form_upper_triangular_toeplitz_matrix([(@SMatrix [0 1.0]) * Apow[k] for k=1:N])
+	χ = form_upper_triangular_toeplitz_matrix([(@SMatrix [1.0 0]) * Apow[k] for k=1:N])
 
 	V_N = QuadraticPolynomial(1.0, -2*g[end], g[end]^2)
 

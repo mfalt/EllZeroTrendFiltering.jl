@@ -23,7 +23,7 @@ M = 10
 
     #Test regularize discrete
     # should generate solution with 10 segments
-    I, Y, f = fit_pwl_regularized(data, 0.02; precompute=precompute)
+    I, Y, f = fit_pwl_regularized(data, 0.02)
     @test length(I) == 9
     @test I == Ivec[8]
     @test Y ≈ Yvec[8]     rtol=sqrt(eps())
@@ -48,7 +48,7 @@ M = 10
     @test cost ≈ fvec[5]       rtol=sqrt(eps())
 
     ζ = 0.002
-    I, Y, cost = fit_pwl_regularized(g_, t, ζ, precompute=precompute)
+    I, Y, cost = fit_pwl_regularized(g_, t, ζ; precompute=precompute)
 
     @test I == [1, 9, 15, 33, 52, 68, 87, 104, 111, 125, 132, 146, 153, 170, 188, 201]
     @test cost ≈ 0.006061712727833957

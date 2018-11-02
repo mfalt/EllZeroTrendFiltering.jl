@@ -13,11 +13,12 @@ V_N = QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
 
 start_time = time()
 
-Λ = construct_value_fcn_constrained(l, V_N, 10, 1.65)
+Λ = construct_value_fcn_constrained(l, χ, V_N, 10, 1.65)
 println("Time: ", time()-start_time)
 
 for k=3:10
-    println(k, " : ", recover_optimal_index_set(Λ[k, 1])[3])
+    I, Y, f =  recover_optimal_index_set(Λ[k, 1])
+    println("$k : $f : $I")
 end
 ###
 

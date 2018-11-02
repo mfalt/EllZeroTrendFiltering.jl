@@ -415,23 +415,25 @@ end
 
 
 
-function recover_optimal_index_set_free_ic(l::EllZeroTrendFiltering.AbstractTransitionCost{T}, Λ::Matrix{PiecewiseQuadratic{T}}, m::Integer) where T
-
+function recover_optimal_index_set_zero_ic(l::EllZeroTrendFiltering.AbstractTransitionCost{T}, Λ::Matrix{PiecewiseQuadratic{T}}, m::Integer) where T
     N = size(l, 2)
 	cost_best = 10000000
 	λ_best = -1
+    ip_best = -1
 	# For the constrained case
 	for ip=2:N-m # Or should it be N-m+1 or something else
 		r = l[1,ip].r # Only handles zero initial conditions, arbitrary intiial conditions would be more messy
-	    for λ in Λ[m-1, ip]
+	    for λ in Λ[m, ip]
 	        if cost_best > r +  λ.p(0.0)
-	            cost_best = λ.p(0.0)
+	            cost_best = r + λ.p(0.0)
+                ip_best = ip
 	            λ_best = λ
                 println("$(λ_best.p) : $cost_best")
 	        end
 	    end
 	end
-	I = recover_ancestors(λ_best.p)
+	I = [ip_best; recover_ancestors(λ_best.p)[1:end-1]]
+    I, cost_best
 end
 
 function recover_ancestors(p::QuadraticPolynomial)
@@ -662,7 +664,7 @@ end
 
 # Continuous function
 function  fit_pwl_regularized(g, t, ζ; tol=1e-3, precompute=false)
-    l, χ, V_N = compute_problem_data_pwl(g, t, precompute, tol=tol)
+    l, χ, V_N = compute_problem_data_pwl(g, t; precompute=precompute, tol=tol)
     ell0_regularized_dp(l, χ, V_N, ζ)
 end
 
@@ -701,8 +703,8 @@ i.e. so that `f[t[I]] .== Y`.
 `precompute` = true, means that the internal transition costs `l[i,j]` will be calculated when needed.
 `tol` specifies the relative tolerance sent to `quadg` kused when calculating the integrals (continuous case).
 """
-function  fit_pwl_constrained(g::AbstractArray, M; t=1:length(g))
-    l, χ, V_N = compute_problem_data_pwl(g, t; precompute=false)
+function  fit_pwl_constrained(g::AbstractArray, M; t=1:length(g), precompute=true)
+    l, χ, V_N = compute_problem_data_pwl(g, t; precompute=precompute)
     ell0_constrained_dp(l, χ, V_N, M)
 end
 

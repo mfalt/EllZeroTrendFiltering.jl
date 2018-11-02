@@ -30,7 +30,7 @@ function _test_positivity(l::TransitionCostContinuous)
     N = size(l, 2)
     for i=1:N-1, ip=i+1:min(i+2,N) # It should be sufficient to test only for elements on the main diagonal, one more diagonal is considered just in case
         #QUESTION: add epsilon on RHS?
-        minimize(l[i,ip]) < 0 && error("Transition cost is negative for some values in `compute_transition_costs`, try decreasing rtol.")
+        find_minimum(l[i,ip])[2] < 0 && error("Transition cost is negative for some values in `compute_transition_costs`, try decreasing rtol.")
     end
 end
 
