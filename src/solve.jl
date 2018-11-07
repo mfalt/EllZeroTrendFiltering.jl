@@ -241,15 +241,18 @@ function pwq_dp_constrained(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolyno
     #global counter2
     #counter1 = 0
     #counter2 = 0
-
     N = size(ℓ, 2)
     @assert M <= N-1 "Cannot have more segments than N-1."
+
+    V_N = deepcopy(V_N)
+    V_N.time_index = N
 
     Λ = Array{PiecewiseQuadratic{T}}(undef, M, N)
 
     for i=1:N-1
         p = minimize_wrt_x2(ℓ[i, N], V_N)
-        p.time_index = N
+        p.time_index = i
+        p.ancestor = V_N
         Λ[1, i] = create_new_pwq(p)
     end
 
@@ -289,7 +292,7 @@ function pwq_dp_constrained(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolyno
                     add_quadratic!(Λ_new, μ)
 
                     if μ.has_been_used == true
-                        μ.time_index = ip
+                        μ.time_index = i
                         μ.ancestor = λ.p
                         μ = QuadraticPolynomial{T}()
                         μ.has_been_used = false
@@ -326,7 +329,7 @@ function pwq_dp_regularized(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolyno
     Λ = Vector{PiecewiseQuadratic{T}}(undef, N)
 
     V_N = deepcopy(V_N)
-    V_N.time_index = -1
+    V_N.time_index = N
     Λ[N] = create_new_pwq(V_N)
 
     μ = QuadraticPolynomial{T}()
@@ -347,7 +350,7 @@ function pwq_dp_regularized(ℓ::AbstractTransitionCost{T}, V_N::QuadraticPolyno
                 add_quadratic!(Λ_new, μ)
 
                 if μ.has_been_used
-                    μ.time_index = ip
+                    μ.time_index = i
                     μ.ancestor = λ.p
                     μ = QuadraticPolynomial{T}()
                     μ.has_been_used = false
@@ -377,7 +380,7 @@ function recover_optimal_index_set(Λ::PiecewiseQuadratic{T}, first_index=1) whe
 
     p, y, f = find_minimum(Λ)
 
-    I = [first_index]
+    I = Vector{Int}(undef, 0)
 
     while true
         push!(I, p.time_index)
@@ -387,10 +390,6 @@ function recover_optimal_index_set(Λ::PiecewiseQuadratic{T}, first_index=1) whe
         end
 
         p = p.ancestor
-
-        if p.time_index == -1
-            break
-        end
     end
 
     return I, y, f
