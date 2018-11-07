@@ -1,6 +1,5 @@
 using EllZeroTrendFiltering
 using Test, Random, LinearAlgebra
-using ControlSystems
 import Printf: @printf
 
 tests = [
@@ -9,7 +8,6 @@ tests = [
     "piecewise_quadratics.jl",
     "continuous_transition_costs.jl",
     "discrete_transition_costs.jl",
-    "lti_costs.jl",
     "brute_force_search.jl",
     "construct_value_fcn_constrained.jl",
     "exact_tests.jl",

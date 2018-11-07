@@ -284,15 +284,19 @@ function construct_value_fcn_constrained(l::AbstractTransitionCost{T}, χ::Abstr
     #global counter2
     #counter1 = 0
     #counter2 = 0
-
     N = size(l, 2)
+
+    V_N = deepcopy(V_N)
+    V_N.time_index = N
+
     @assert M <= N-1 "Cannot have more segments than N-1."
 
     Λ = Array{PiecewiseQuadratic{T}}(undef, M, N)
 
     for i=1:N-1
         p = minimize_wrt_x2(l[i,N] + (V_N ∘ χ[i,N]))
-        p.time_index = N
+        p.time_index = i
+        p.ancestor = V_N
         Λ[1, i] = create_new_pwq(p)
     end
 
@@ -331,7 +335,7 @@ function construct_value_fcn_constrained(l::AbstractTransitionCost{T}, χ::Abstr
                     add_quadratic!(Λ_new, μ)
 
                     if μ.has_been_used == true
-                        μ.time_index = ip
+                        μ.time_index = i
                         μ.ancestor = λ.p
                         μ = QuadraticPolynomial{T}()
                         μ.has_been_used = false
@@ -366,7 +370,7 @@ function construct_value_fcn_regularized(l::AbstractTransitionCost{T}, χ::Abstr
     Λ = Vector{PiecewiseQuadratic{T}}(undef, N)
 
     V_N = deepcopy(V_N)
-    V_N.time_index = -1
+    V_N.time_index = N
     Λ[N] = create_new_pwq(V_N)
 
     μ = QuadraticPolynomial{T}()
@@ -387,7 +391,7 @@ function construct_value_fcn_regularized(l::AbstractTransitionCost{T}, χ::Abstr
                 add_quadratic!(Λ_new, μ)
 
                 if μ.has_been_used
-                    μ.time_index = ip
+                    μ.time_index = i
                     μ.ancestor = λ.p
                     μ = QuadraticPolynomial{T}()
                     μ.has_been_used = false
@@ -447,21 +451,17 @@ function recover_ancestors(p::QuadraticPolynomial)
 		end
 
 		p = p.ancestor
-
-		if p.time_index == -1
-			break
-		end
 	end
 
 	return I
 end
 
 
-function recover_optimal_index_set(Λ::PiecewiseQuadratic{T}, first_index=1) where T
+function recover_optimal_index_set(Λ::PiecewiseQuadratic{T}) where T
 
     p, y, f = find_minimum(Λ)
 
-    I = [first_index]
+    I = Vector{Int}(undef, 0)
 
     while true
         push!(I, p.time_index)
@@ -471,10 +471,6 @@ function recover_optimal_index_set(Λ::PiecewiseQuadratic{T}, first_index=1) whe
         end
 
         p = p.ancestor
-
-        if p.time_index == -1
-            break
-        end
     end
 
     return I, y, f
@@ -517,7 +513,7 @@ end
 
 """
 function recover_solution(Λ::PiecewiseQuadratic, l, V_N::QuadraticPolynomial, ζ=0.0)
-    I, _, f_expected = recover_optimal_index_set(Λ, 1)
+    I, _, f_expected = recover_optimal_index_set(Λ)
     Y, f = find_optimal_y_values(l, V_N::QuadraticPolynomial, I)
 
     f_regularized = f + ζ*(length(I)-1) # Include regularization cost
