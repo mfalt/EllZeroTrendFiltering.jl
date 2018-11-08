@@ -187,7 +187,7 @@ function find_optimal_first_impulse(Λ::Vector{Union{PiecewiseQuadratic{T},Nothi
     p_best = QuadraticPolynomial{T}() # TODO: maybe could be QuadraticPolynomial instead
 
     for ip=2:length(Λ) # Or should it be N-m+1 or something else
-        if Λ[ip] == nothing; break; end        
+        if Λ[ip] == nothing; break; end
 
         r = l[1,ip].r # Only handles zero initial conditions, arbitrary intiial conditions would be more messy
         for λ in Λ[ip]
@@ -195,7 +195,7 @@ function find_optimal_first_impulse(Λ::Vector{Union{PiecewiseQuadratic{T},Nothi
             if cost_best >  cost
                 cost_best = cost
                 p_best = λ.p
-                println("$(λ_best.p) : $cost_best")
+                println("$p_best : $cost_best")
             end
         end
     end
@@ -234,10 +234,7 @@ function recover_optimal_index_set(Λ::PiecewiseQuadratic{T}) where T
     while true
         push!(I, p.time_index)
 
-        if !isdefined(p, :ancestor);
-            break;
-        end
-
+        if !isdefined(p, :ancestor); break; end
         p = p.ancestor
     end
 
