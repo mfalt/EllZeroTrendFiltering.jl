@@ -18,7 +18,7 @@ function construct_value_fcn_constrained(l::AbstractTransitionCost{T}, χ::Abstr
 
     @assert M <= N-1 "Cannot have more segments than N-1."
 
-    Λ = Array{PiecewiseQuadratic{T}}(undef, M, N)
+    Λ = Matrix{Union{PiecewiseQuadratic{Float64},Nothing}}(nothing, M, N)
 
     for i=1:N-1
         p = minimize_wrt_x2(l[i,N] + (V_N ∘ χ[i,N]))
@@ -91,7 +91,7 @@ where l[j,k] are positive-definite quadratic forms.
 function construct_value_fcn_regularized(l::AbstractTransitionCost{T}, χ::AbstractMatrix, V_N::QuadraticPolynomial{T}, ζ::T) where T
     N = size(l, 2)
 
-    Λ = Vector{PiecewiseQuadratic{T}}(undef, N)
+    Λ = Vector{Union{PiecewiseQuadratic{T},Nothing}}(undef, N)
 
     V_N = deepcopy(V_N)
     V_N.time_index = N
@@ -143,7 +143,7 @@ end
 
 
 
-function recover_optimal_index_set_zero_ic(l::EllZeroTrendFiltering.AbstractTransitionCost{T}, Λ::Matrix{PiecewiseQuadratic{T}}, m::Integer) where T
+function recover_optimal_index_set_zero_ic(l::EllZeroTrendFiltering.AbstractTransitionCost{T}, Λ::Matrix{Union{PiecewiseQuadratic{T},Nothing}}, m::Integer) where T
     N = size(l, 2)
 	cost_best = 10000000
 	λ_best = -1
@@ -164,20 +164,64 @@ function recover_optimal_index_set_zero_ic(l::EllZeroTrendFiltering.AbstractTran
     I, cost_best
 end
 
+
 function recover_ancestors(p::QuadraticPolynomial)
-	I = Vector{Int}(undef, 0)
 
-	while true
-		push!(I, p.time_index)
+    J = Vector{Int}(undef, 0)
 
-		if !isdefined(p, :ancestor);
-			break;
-		end
+    while true
+        push!(J, p.time_index)
 
-		p = p.ancestor
-	end
+        if !isdefined(p, :ancestor);
+            break;
+        end
 
-	return I
+        p = p.ancestor
+    end
+
+    return J
+end
+
+function find_optimal_first_impulse(Λ::Vector{Union{PiecewiseQuadratic{T},Nothing}}, l) where T
+    cost_best = typemax(T)
+    p_best = QuadraticPolynomial{T}() # TODO: maybe could be QuadraticPolynomial instead
+
+    for ip=2:length(Λ) # Or should it be N-m+1 or something else
+        if Λ[ip] == nothing; break; end        
+
+        r = l[1,ip].r # Only handles zero initial conditions, arbitrary intiial conditions would be more messy
+        for λ in Λ[ip]
+            cost = r +  λ.p(0.0) # Incurred cost of doing nothing up to time ip, then impulse, x1 remains 0
+            if cost_best >  cost
+                cost_best = cost
+                p_best = λ.p
+                println("$(λ_best.p) : $cost_best")
+            end
+        end
+    end
+
+    return p_best, cost_best
+end
+
+function recover_optimal_index_set(Λ::Vector{Union{PiecewiseQuadratic{T},Nothing}}, l, χ, initial_conditions::Symbol=:zero) where T
+    if initial_conditions == :free # free initial conditions
+        p, y, f = find_minimum(Λ[1])
+
+        # Find optimal initial conditions
+        i = p.time_index
+        ip = p.ancestor.time_index
+        x0 = find_minimum(l[i, ip] + (p ∘ χ[i,ip]))[1]
+
+        # Find optimal index set
+        J = recover_ancestors(p)
+        return J, f, x0, y
+    elseif initial_conditions == :zero
+        p_best, cost_best = find_optimal_first_impulse(Λ, l)
+    	J = recover_ancestors(p_best)[1:end-1]
+        return J, cost_best, [0.0; 0], 0.0
+    else
+        error("Unknown type of initial condition")
+    end
 end
 
 
