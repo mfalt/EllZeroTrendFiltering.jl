@@ -30,7 +30,6 @@ function construct_value_fcn_constrained(l::AbstractTransitionCost{T}, χ::Abstr
     μ = QuadraticPolynomial{T}()
     upper_bound_inner = Inf
     for m=2:M
-        #println("m: $m")
         for i=1:N-m
             Λ_new = create_new_pwq(T)
             if OPTIMIZE
@@ -156,7 +155,6 @@ function recover_optimal_index_set_zero_ic(l::EllZeroTrendFiltering.AbstractTran
 	            cost_best = r + λ.p(0.0)
                 ip_best = ip
 	            λ_best = λ
-                println("$(λ_best.p) : $cost_best")
 	        end
 	    end
 	end
@@ -195,7 +193,6 @@ function find_optimal_first_impulse(Λ::Vector{Union{PiecewiseQuadratic{T},Nothi
             if cost_best >  cost
                 cost_best = cost
                 p_best = λ.p
-                println("$p_best : $cost_best")
             end
         end
     end
@@ -204,6 +201,7 @@ function find_optimal_first_impulse(Λ::Vector{Union{PiecewiseQuadratic{T},Nothi
 end
 
 function recover_optimal_index_set(Λ::Vector{Union{PiecewiseQuadratic{T},Nothing}}, l, χ, initial_conditions::Symbol=:zero) where T
+
     if initial_conditions == :free # free initial conditions
         p, y, f = find_minimum(Λ[1])
 
@@ -217,6 +215,7 @@ function recover_optimal_index_set(Λ::Vector{Union{PiecewiseQuadratic{T},Nothin
         return J, f, x0, y
     elseif initial_conditions == :zero
         p_best, cost_best = find_optimal_first_impulse(Λ, l)
+
     	J = recover_ancestors(p_best)[1:end-1]
         return J, cost_best, [0.0; 0], 0.0
     else
@@ -297,6 +296,48 @@ end
 
 
 
+function post_process_pwl(l, V_N, J_vec::AbstractVector, f_expected_vec::AbstractVector, ζ=0.0)
+    K = length(J_vec)
+    Y_vec = Vector{Vector{Float64}}(undef, K)
+    y_vec = Vector{Vector{Float64}}(undef, K)
+
+    for k=1:K
+        Y_vec, f = find_optimal_y_values(l, V_N::QuadraticPolynomial, J_vec[k])
+
+        f_regularized = f + ζ*(length(I)-1) # Include regularization cost
+
+        if !isapprox(f_regularized, f_expected_vec[k], atol=1e-10)
+            @warn "Recovered cost ($f_regularized) is not what was expected from value function ($f_expected). Solution might be incorrect."
+        end
+
+        if f_regularized < 0
+            @warn "Computed cost ($f_regularized) < 0, if ≈ 0, this is probably due to numerical errors and nothing to worry about."
+        end
+
+        y_vec[k] = Y # FIXME, needs fixing
+    end
+
+    return Y_vec, y_vec
+end
+function post_process_lti(A::AbstractMatrix, C::AbstractMatrix, g, J_vec::AbstractVector; N_ic=0)
+    N = length(g)
+    K = length(J_vec)
+    U_vec = Vector{Vector{Float64}}(undef, K)
+    y_vec = Vector{Vector{Float64}}(undef, K)
+    x0_vec = Vector{Vector{Float64}}(undef, K)
+
+    sys = ControlSystems.ss(Matrix{Float64}(A), [0.0; 1], Matrix{Float64}(C), 0, 1)
+    X = generate_markov_matrix(sys, N; initial_conditions=:zero)
+
+    for k=1:K
+        Xs = X[:, J_vec[k]]
+        U_vec[k] = Xs\g
+        y_vec[k] = Xs*U_vec[k]
+    end
+
+    return U_vec, y_vec # TODO: maybe also x0 out
+end
+
 
 
 ## Public interface
@@ -375,16 +416,35 @@ function  fit_pwl_constrained(g, t, M; tol=1e-3, precompute=false)
     ell0_constrained_dp(l, χ, V_N, M)
 end
 
+
+
+function  fit_lti_constrained(A::AbstractMatrix, C::AbstractMatrix, g, M; tol=1e-3, precompute=false)
+
+    l, χ, V_N = compute_problem_data_lti(g, A, C)
+
+    Λ = construct_value_fcn_constrained(l, χ, V_N, M, 1000)
+
+    J_vec = Vector{Vector{Int}}(undef, M)
+    f_vec = Vector{Float64}(undef, M)
+    for m=1:M
+        J_vec[m], f_vec[m] = recover_optimal_index_set(Λ[m, :], l, χ, :zero)
+    end
+    J_vec = [J_vec[k] .- 1 for k=1:length(J_vec)]
+
+    U_vec, y_vec = post_process_lti(A, C, g, J_vec)
+    return J_vec, U_vec, f_vec, y_vec
+end
+
 function  ell0_constrained_dp(l::AbstractTransitionCost{T}, χ, V_N, M) where T
     Λ = construct_value_fcn_constrained(l, χ, V_N, M);
 
-    Ivec = Vector{Vector{Int}}(undef, M)
-    Yvec = Vector{Vector{T}}(undef, M)
-    fvec = Vector{T}(undef, M)
+    I_vec = Vector{Vector{Int}}(undef, M)
+    y0_vec = Vector{Vector{T}}(undef, M) # optimal first y-value
+    f_vec = Vector{T}(undef, M)
 
     for m=1:M
-        Ivec[m], Yvec[m], fvec[m] = recover_solution(Λ[m, 1], l, V_N)
+        I_vec[m], y0_vec[m], f_vec[m] = recover_solution(Λ[m, 1], l, V_N)
     end
 
-    return Ivec, Yvec, fvec
+    return I_vec, y0_vec, f_vec
 end

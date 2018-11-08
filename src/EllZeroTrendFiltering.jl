@@ -30,7 +30,7 @@ import Printf: @printf
 global const DEBUG = false
 global const DEBUG2 = false
 global const COUNTER_TEST = false
-global const OPTIMIZE = true
+global const OPTIMIZE = false
 
 # TODO Tweak this accuracy, sqrt(eps()) was not good enough for snp 500, M = 12 test
 global const ACCURACY = sqrt(eps())/100000

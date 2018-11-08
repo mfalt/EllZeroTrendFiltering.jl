@@ -52,6 +52,21 @@ function brute_force_search(l::AbstractTransitionCost{T}, V_N::QuadraticPolynomi
 end
 
 
+# Either initial conditions are free or they are zero
+function generate_markov_matrix(sys::ControlSystems.StateSpace, N; initial_conditions::Symbol=:zero)
+    y, _ = ControlSystems.impulse(sys, N-1)
+    T = MatrixDepot.matrixdepot("toeplitz", y[1:N],  zeros(N))
+
+    if initial_conditions == :free
+        sys_initial = ControlSystems.ss(sys.A, sys.B, Matrix(I, 2, 2), 0, 1)
+        y_initial, _ = ControlSystems.impulse(sys_initial, N)
+        return [y_initial[2:end, :] T]
+    elseif initial_conditions == :zero
+        return T
+    else
+        error("This type of initial condition is not handled")
+    end
+end
 
 
 """
@@ -86,19 +101,9 @@ function brute_force_search(A::Matrix{T}, b::Vector{T}, m::Integer, c::Integer=0
     end
     return I_best, u_best, cost_best
 end
-
-
-
-# Either initial conditions are free or they are zero
-function generate_markov_matrix(sys::ControlSystems.StateSpace, N; free_intial_conditions=false)
-    y, _ = ControlSystems.impulse(sys, N-1)
-    T = MatrixDepot.matrixdepot("toeplitz", y[1:N],  zeros(N))
-
-    if free_intial_conditions
-        sys_initial = ControlSystems.ss(sys.A, sys.B, Matrix(I, 2, 2), 0, 1)
-        y_initial, _ = ControlSystems.impulse(sys_initial, N)
-        return [y_initial[2:end, :] T]
-    else
-        return T
-    end
+function brute_force_search(sys::ControlSystems.StateSpace, g, m; initial_conditions=:free) where {T}
+    N = length(g)
+    c = initial_conditions == :free ? size(sys.A, 1) : 0
+    X = generate_markov_matrix(sys, N; initial_conditions=initial_conditions)
+    return brute_force_search(X, g, m, c)
 end

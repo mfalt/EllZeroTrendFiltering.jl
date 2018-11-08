@@ -12,6 +12,7 @@ tests = [
     "construct_value_fcn_constrained.jl",
     "exact_tests.jl",
     "fit_pwl_constrained.jl",
+    "fit_lti_constrained.jl",
     "fit_pwl_regularized.jl",
     "subsample_test.jl",
     "examples.jl"]

@@ -10,7 +10,7 @@ function QuadraticForm(P::SMatrix{2,2,T,4}, q::AbstractVecOrMat{T}, r::T) where 
 end
 
 function find_minimum(qf::QuadraticForm)
-    x_opt = -qf.P \ pf.q / 2
+    x_opt = -qf.P \ qf.q / 2
     f_opt = -qf.q⋅(qf.P\qf.q)/4+qf.r
     return x_opt, f_opt
 end
