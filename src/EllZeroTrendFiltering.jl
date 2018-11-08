@@ -42,7 +42,9 @@ include(joinpath("types","transition_costs.jl"))
 
 AbstractTransitionCost{T} = Union{Array{QuadraticForm{T},2}, TransitionCostDiscrete{T}, TransitionCostContinuous{T}}
 
+
 include("utility_fcns.jl")
+include("insert_quadratic_poly.jl")
 include("compute_problem_data.jl")
 include("brute_force_search.jl")
 include("solve.jl")

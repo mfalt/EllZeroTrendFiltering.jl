@@ -1,5 +1,5 @@
 using Test
-using EllZeroTrendFiltering: add_quadratic!
+using EllZeroTrendFiltering: insert_quadratic!
 
 global const TEST_PRINT_LEVEL = 0
 
@@ -25,7 +25,7 @@ function verify_piecewise_quadratic(c_mat, show_plot=false)
     pwq = create_new_pwq(Float64)
     for p in poly_list
         TEST_PRINT_LEVEL > 0 && println("Inserting: ", p)
-        add_quadratic!(pwq, p)
+        insert_quadratic!(pwq, p)
 
         TEST_PRINT_LEVEL > 0 && println("After Insertion: ")
         TEST_PRINT_LEVEL > 0 && println(pwq)
@@ -71,7 +71,7 @@ end
 pwq = generate_PiecewiseQuadratic(([2.0, 2, 1], -Inf), ([2.0, -2, 1], 0.0))
 
 @test length(pwq) == 2
-add_quadratic!(pwq, QuadraticPolynomial([1, 0, 1.0]))
+insert_quadratic!(pwq, QuadraticPolynomial([1, 0, 1.0]))
 
 #Test print string
 str = "PiecewiseQuadratic{Float64} with 3 elements:\n[  -∞ , -0.50]\t  :   1.00*x^2 + 2.00*x + 2.00   \n[-0.50, 0.50]\t  :   1.00*x^2 + 0.00*x + 1.00   \n[0.50, ∞  ]\t  :   1.00*x^2 + -2.00*x + 2.00   \n"
@@ -89,15 +89,15 @@ p2 = QuadraticPolynomial([1.0, 0, 2])
 p3 = QuadraticPolynomial(2.5, -2.5, 1.0)
 
 pwq1 = create_new_pwq(p1)
-add_quadratic!(pwq1, p2)
+insert_quadratic!(pwq1, p2)
 @test length(pwq1) == 3
-add_quadratic!(pwq1, p3)
+insert_quadratic!(pwq1, p3)
 @test length(pwq1) == 4
 
 pwq2 = create_new_pwq(p2)
-add_quadratic!(pwq2, p3)
+insert_quadratic!(pwq2, p3)
 @test length(pwq2) == 3
-add_quadratic!(pwq2, p1)
+insert_quadratic!(pwq2, p1)
 @test length(pwq2) == 4
 
 @test pwq1[1].p === pwq2[1].p == p1
