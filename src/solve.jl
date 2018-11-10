@@ -282,7 +282,7 @@ function recover_solution(Λ::PiecewiseQuadratic, l, V_N::QuadraticPolynomial, �
 
     f_regularized = f + ζ*(length(I)-1) # Include regularization cost
 
-    if !isapprox(f_regularized, f_expected, atol=1e-10)
+    if !isapprox(f_regularized, f_expected, atol=1e-8, rtol=1e-8)
         @warn "Recovered cost ($f_regularized) is not what was expected from value function ($f_expected). Solution might be incorrect."
     end
 
@@ -306,7 +306,7 @@ function post_process_pwl(l, V_N, J_vec::AbstractVector, f_expected_vec::Abstrac
 
         f_regularized = f + ζ*(length(I)-1) # Include regularization cost
 
-        if !isapprox(f_regularized, f_expected_vec[k], atol=1e-10)
+        if !isapprox(f_regularized, f_expected_vec[k], atol=1e-8, rtol=1e-8)
             @warn "Recovered cost ($f_regularized) is not what was expected from value function ($f_expected). Solution might be incorrect."
         end
 

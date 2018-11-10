@@ -73,6 +73,7 @@ function insert_quadratic!(Λ::PiecewiseQuadratic{T}, μ::QuadraticPolynomial{T}
         elseif Δa < 0 # μ has lower curvature, i.e., μ is smallest on the sides
             if b2_minus_4ac <= ACCURACY
                 # Zero (or one) roots
+                DEBUG && println("Δa < 0   b2_minus_4ac: ", b2_minus_4ac)
                 λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
             else
                 # Compute the intersections
@@ -101,7 +102,9 @@ function insert_quadratic!(Λ::PiecewiseQuadratic{T}, μ::QuadraticPolynomial{T}
             end
         else # Δa == 0.0
             DEBUG && println("Δa == 0")
-            DEBUG2 && println("Δa == 0 : $μ")
+            DEBUG2 && println("μ       : $μ")
+            DEBUG2 && println("Δb      : $Δb")
+            DEBUG2 && println("Δc      : $Δc")
             if Δb == 0
                 if Δc >= 0
                     λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
@@ -112,22 +115,45 @@ function insert_quadratic!(Λ::PiecewiseQuadratic{T}, μ::QuadraticPolynomial{T}
             end
 
             root = -Δc / Δb
-            if Δb > 0
-                if root < left_endpoint
+            DEBUG && println("root    : $root")
+            DEBUG && println("left_endpoint : $left_endpoint")
+            DEBUG && println("right_endpoint : $right_endpoint")
+            # TODO think through this more and reduce to one case?
+            # These two cases only seem to happen for LTI systems
+            if root < -1e10 # Don't allow intersections far away for numerical reasons
+                DEBUG && println("root    : $root < -1e10, Special case 1")
+                if Δc >= 0 # intersection to left we and new is worse shouldnt have to do anything
+                    # TODO Break here?
                     λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
-                elseif root > right_endpoint
+                else # New is better, keep new
                     λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
-                else
-                    λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, μ, root)
+                end
+            elseif root > 1e10
+                DEBUG && println("root    : $root > 1e10, Special case 2")
+                if Δc >= 0 # intersection to RIGHT we and new is better far to the right, ignore this?
+                    # TODO Something else?
+                    λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
+                else # New is better, keep new
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
                 end
             else
-                if root < left_endpoint
-                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
-                elseif root > right_endpoint
-                    λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
+                if Δb > 0
+                    if root < left_endpoint
+                        λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
+                    elseif root > right_endpoint
+                        λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
+                    else
+                        λ_prev, λ_curr = update_segment_new_old(λ_prev, λ_curr, μ, root)
+                    end
                 else
-                    DEBUG2 && println("Special case")
-                    λ_prev, λ_curr = update_segment_old_new(λ_curr, μ, root)
+                    if root < left_endpoint
+                        λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
+                    elseif root > right_endpoint
+                        λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
+                    else
+                        DEBUG2 && println("Special case")
+                        λ_prev, λ_curr = update_segment_old_new(λ_curr, μ, root)
+                    end
                 end
             end
         end
