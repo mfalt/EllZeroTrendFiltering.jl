@@ -137,3 +137,31 @@ N = 10
 c_mat_rand = [2 .+ rand(N) 2*rand(N) 1 .+ rand(N)]
 
 verify_piecewise_quadratic(c_mat_rand)
+
+#
+## Test case for numerically problematic cases
+#
+p1 = QuadraticPolynomial(1.00, -(2-1e-15), 0.3)
+p2 = QuadraticPolynomial(1.00, -(2+1e-15), 1.4)
+p3 = QuadraticPolynomial(1.00-1e-15, -(2-1e-15), 1.6)
+
+Λ = create_new_pwq(p1)
+EllZeroTrendFiltering.insert_quadratic!(Λ, p2) # Intersection is far away, p2 should not be inserted
+@test length(Λ) == 1
+@test Λ[1].p == p1
+EllZeroTrendFiltering.insert_quadratic!(Λ, p3)
+@test length(Λ) == 1
+@test Λ[1].p == p1
+
+
+p1 = QuadraticPolynomial(1.00, -(2-1e-15), 0.3)
+p2 = QuadraticPolynomial(1.00+1e-15, -(2+1e-15), 1.4)
+p3 = QuadraticPolynomial(1.00+1e-15, -(2-1e-15), 1.6)
+
+Λ = create_new_pwq(p1)
+EllZeroTrendFiltering.insert_quadratic!(Λ, p2) # Intersection is far away, p2 should not be inserted
+@test length(Λ) == 1
+@test Λ[1].p == p1
+EllZeroTrendFiltering.insert_quadratic!(Λ, p3)
+@test length(Λ) == 1
+@test Λ[1].p == p1

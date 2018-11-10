@@ -34,7 +34,12 @@ function insert_quadratic!(Λ::PiecewiseQuadratic{T}, μ::QuadraticPolynomial{T}
             if b2_minus_4ac <= ACCURACY
                 # Zero (or one) intersections, old quadratic is smallest, just step forward
                 DEBUG && println("No intersections, old quadratic is smallest, Δa > 0, breaking.")
-                break
+                if Δc < 0
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
+                else
+                    λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
+                end
+                #break
             else
 
                 # Compute the intersections
@@ -74,7 +79,11 @@ function insert_quadratic!(Λ::PiecewiseQuadratic{T}, μ::QuadraticPolynomial{T}
             if b2_minus_4ac <= ACCURACY
                 # Zero (or one) roots
                 DEBUG && println("Δa < 0   b2_minus_4ac: ", b2_minus_4ac)
-                λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
+                if Δc < 0
+                    λ_prev, λ_curr = update_segment_new(λ_prev, λ_curr, μ)
+                else
+                    λ_prev, λ_curr = update_segment_do_nothing(λ_curr)
+                end
             else
                 # Compute the intersections
                 term1 = -(Δb / 2 / Δa)
