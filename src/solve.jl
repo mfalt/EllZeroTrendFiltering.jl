@@ -319,7 +319,7 @@ function post_process_pwl(l, V_N, J_vec::AbstractVector, f_expected_vec::Abstrac
 
     return Y_vec, y_vec
 end
-function post_process_lti(A::AbstractMatrix, C::AbstractMatrix, g, J_vec::AbstractVector; N_ic=0)
+function post_process_lti(A::AbstractMatrix, C::AbstractMatrix, g, J_vec::AbstractVector; N_ic=0, initial_conditions=:zero)
     N = length(g)
     K = length(J_vec)
     U_vec = Vector{Vector{Float64}}(undef, K)
@@ -327,7 +327,7 @@ function post_process_lti(A::AbstractMatrix, C::AbstractMatrix, g, J_vec::Abstra
     x0_vec = Vector{Vector{Float64}}(undef, K)
 
     sys = ControlSystems.ss(Matrix{Float64}(A), [0.0; 1], Matrix{Float64}(C), 0, 1)
-    X = generate_markov_matrix(sys, N; initial_conditions=:zero)
+    X = generate_markov_matrix(sys, N; initial_conditions=initial_conditions)
 
     for k=1:K
         Xs = X[:, J_vec[k]]
@@ -418,7 +418,7 @@ end
 
 
 
-function  fit_lti_constrained(A::AbstractMatrix, C::AbstractMatrix, g, M; tol=1e-3, precompute=false)
+function  fit_lti_constrained(A::AbstractMatrix, C::AbstractMatrix, g, M; tol=1e-3, precompute=false, initial_conditions=:zero)
 
     l, χ, V_N = compute_problem_data_lti(g, A, C)
 
@@ -427,11 +427,11 @@ function  fit_lti_constrained(A::AbstractMatrix, C::AbstractMatrix, g, M; tol=1e
     J_vec = Vector{Vector{Int}}(undef, M)
     f_vec = Vector{Float64}(undef, M)
     for m=1:M
-        J_vec[m], f_vec[m] = recover_optimal_index_set(Λ[m, :], l, χ, :zero)
+        J_vec[m], f_vec[m] = recover_optimal_index_set(Λ[m, :], l, χ, initial_conditions)
     end
     J_vec = [J_vec[k] .- 1 for k=1:length(J_vec)]
 
-    U_vec, y_vec = post_process_lti(A, C, g, J_vec)
+    U_vec, y_vec = post_process_lti(A, C, g, J_vec, initial_conditions=initial_conditions)
     return J_vec, U_vec, f_vec, y_vec
 end
 

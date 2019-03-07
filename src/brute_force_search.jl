@@ -58,9 +58,9 @@ function generate_markov_matrix(sys::ControlSystems.StateSpace, N; initial_condi
     T = MatrixDepot.matrixdepot("toeplitz", y[1:N],  zeros(N))
 
     if initial_conditions == :free
-        sys_initial = ControlSystems.ss(sys.A, sys.B, Matrix(I, 2, 2), 0, 1)
+        sys_initial = ControlSystems.ss(sys.A, Matrix(I, 2, 2), sys.C, 0, 1)
         y_initial, _ = ControlSystems.impulse(sys_initial, N)
-        return [y_initial[2:end, :] T]
+        return [y_initial[2:end, 1, :] T]
     elseif initial_conditions == :zero
         return T
     else
