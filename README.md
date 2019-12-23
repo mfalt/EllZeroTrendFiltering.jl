@@ -45,9 +45,9 @@ Ivec, Yvec, fvec = fit_pwl_constrained(data, M)
 #Plot original data
 plot(data, l=:black, lab = "SNP500")
 #Plot solution with 5 segments
-plot!(Ivec[5], Yvec[5], l=2, m=:circle, lab="m=5, cost = $(round(fvec[5],3))")
+plot!(Ivec[5], Yvec[5], l=2, m=:circle, lab="m=5, cost = $(round(fvec[5],digits=3))")
 #Plot solution with 10 segments
-plot!(Ivec[M], Yvec[M], l=2, m=:circle, lab="m=$M, cost = $(round(fvec[M],3))")
+plot!(Ivec[M], Yvec[M], l=2, m=:circle, lab="m=$M, cost = $(round(fvec[M],digits=3))")
 
 ```
 ![Example figure](figures/snp500.svg)
@@ -67,7 +67,7 @@ for ζ ∈ [0.1, 0.002]
     # Will automatically integrate the function to compute the costs
     I, Y, cost = fit_pwl_regularized(g, t, ζ)
 
-    plot!(t[I], Y, l=2, m=:circle, lab = "l2-norm=$(round(cost,3)), zeta=$ζ")
+    plot!(t[I], Y, l=2, m=:circle, lab = "l2-norm=$(round(cost,digits=3)), zeta=$ζ")
 end
 plot!() # Show plot
 ```
