@@ -1,9 +1,9 @@
 using Plots
 using Convex
-using Mosek
+using Mosek, MosekTools
 using SCS
 using DelimitedFiles
-
+using SparseArrays
 
 data = readdlm(joinpath(dirname(@__FILE__),"data","snp500.txt"))
 n = size(data)[1]
@@ -11,7 +11,7 @@ n = size(data)[1]
 #p = plot(1:length(data), data)
 
 N = length(data)
-H =  spdiagm((ones(N-2), -2*ones(N-2), ones(N-2)), (0,1,2))
+H =  spdiagm(0=>ones(N-2), 1=>-2*ones(N-2), 2=>ones(N-2))
 
 
 x = Variable(N)
@@ -20,7 +20,8 @@ x = Variable(N)
 problem = minimize(0.5*sumsquares(x - data) + λ*norm(H*x, 1))
 
 # Solve the problem by calling solve!
-solve!(problem, MosekSolver())
+solve!(problem, Mosek.Optimizer)
+solve!(problem, SCS.Optimizer)
 
 # Check the status of the problem
 problem.status # :Optimal, :Infeasible, :Unbounded etc.

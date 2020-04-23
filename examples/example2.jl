@@ -23,9 +23,9 @@ end
 
 
 
-@time I2, y2, f2 = recover_optimal_index_set(Λ[7, 1], 1, N)
+@time I2, y2, f2 = recover_optimal_index_set(Λ[7, 1])
 println(I2)
-Y2, f2_2 = find_optimal_y_values(ℓ, cost_last, I2)
+Y2, f2_2 = EllZeroTrendFiltering.find_optimal_y_values(ℓ, cost_last, I2)
 
 
 I2, Y2, f3 = recover_solution(Λ[7, 1], ℓ, cost_last, )
@@ -45,9 +45,9 @@ plot!(l', subplot=2)
 sum(l)
 ##
 
-I2, y2, f2 = recover_solution(Λ[6, 1], 1, N)
+I2, y2, f2 = EllZeroTrendFiltering.recover_solution(Λ[6, 1], ℓ, cost_last)
 println(I2)
-Y2, _ = find_optimal_y_values(ℓ, I2)
+Y2, _ = EllZeroTrendFiltering.find_optimal_y_values(ℓ, cost_last, I2)
 
 plot(data)
 plot!(I2, Y2)

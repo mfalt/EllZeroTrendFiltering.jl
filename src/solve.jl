@@ -428,7 +428,7 @@ end
 
 # TODO: Include mζ in the cost?!
 """
-    I, Y, f = recover_solution(Λ::PiecewiseQuadratic{T}, ℓ, V_N::QuadraticPolynomial, first_index=1)
+    I, Y, f = recover_solution(Λ::PiecewiseQuadratic{T}, ℓ, V_N::QuadraticPolynomial, ζ=0.0)
 
 """
 function recover_solution(Λ::PiecewiseQuadratic, ℓ, V_N::QuadraticPolynomial, ζ=0.0)

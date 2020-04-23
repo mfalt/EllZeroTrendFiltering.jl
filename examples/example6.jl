@@ -1,3 +1,4 @@
+### Note this code is outdated
 using Plots
 using Convex
 using Mosek

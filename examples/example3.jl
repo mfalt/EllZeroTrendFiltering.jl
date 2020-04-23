@@ -4,6 +4,7 @@ using Mosek
 using SCS
 using Interpolations
 using DelimitedFiles
+using SparseArrays
 
 # This is a julia implementaiton of an example
 # from "ℓ1 Trend Filtering" by Kim et al (2009)
@@ -21,7 +22,7 @@ I_sets = [
 [1, 365, 515, 545, 628, 769, 837, 987, 1190, 1853, 2000]
 ]
 
-cost_l0 = [find_optimal_y_values(ℓ, I_sets[k])[2] for k=1:10]
+#cost_l0 = [find_optimal_y_values(ℓ, I_sets[k])[2] for k=1:10]
 
 
 #---
@@ -35,18 +36,19 @@ function is_local_max(y)
 end
 
 #---
-data = readdlm(joinpath(joinpath(dirname(@__FILE__),"data",,"snp500.txt"))
+data = readdlm(joinpath(joinpath(dirname(@__FILE__),"data","snp500.txt")))
 
 N = length(data)
-H =  spdiagm((ones(N-2), -2*ones(N-2), ones(N-2)), (0,1,2))
+H =  spdiagm(0=>ones(N-2), 1=>-2*ones(N-2), 2=>ones(N-2))
 
 x = Variable(N)
 
-
+ℓ = compute_discrete_transition_costs(data);
+cost_last = QuadraticPolynomial(1.0, -2*data[end], data[end]^2)
 #---
 r = 6
 I = I_sets[r]
-Y, _ = find_optimal_y_values(ℓ, I)
+Y, _ = EllZeroTrendFiltering.find_optimal_y_values(ℓ, cost_last, I)
 y_l0 = interpolate((I,), Y, Gridded(Linear()))[1.0:N]
 
 
@@ -62,7 +64,7 @@ println("Opt. val: ",problem.optval, "   (problem status: ", problem.status, ")"
 
 y_l1 = evaluate(x)[:]
 
-
+### THE REST OF THIS FILE IS OUTDATED
 
 v = sortperm(abs.(H*y_l1) + 1*is_local_max(abs.(H*y_l1)))
 

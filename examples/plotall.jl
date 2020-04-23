@@ -1,5 +1,5 @@
-
-using Base.Test
+# Note this file is outdates
+using Test, Printf, Random
 
 # TODO What is this?
 #@everywhere include(joinpath(dirname(@__FILE__),"..","src","jl"))
@@ -28,7 +28,7 @@ function plotall(Λ,ℓ,t,g, both=true)
                 plot!(p, y, x, l=:red, subplot=k, lab="$I, $ystr, $fstr", ylims=(-4,4), xlims=(0,6))
                 if both && length(I) > 1 && fI != NaN
                     Y, _ = find_optimal_y_values(ℓ, I)
-                    tcont = range(t[1], stop=t[end], length=100*length(t)))
+                    tcont = range(t[1], stop=t[end], length=100*length(t))
                     plot!(p, tcont/t[end]*(N-1)+1, g.(tcont), l=:blue, lab="", subplot=k+N-1)
                     plot!(p, I, Y, m=:circle, l=:red, lab="", subplot=k+N-1)
                 end
@@ -41,7 +41,7 @@ function plotall(Λ,ℓ,t,g, both=true)
 end
 
 ##
-srand(9)
+Random.seed!(9)
 N = 20
 ran = cumsum(0.1*randn(10*N))
 

@@ -1,5 +1,5 @@
 using StaticArrays, EllZeroTrendFiltering
-using Test, Pkg
+using Test
 
 #SNP example
 N = 400
